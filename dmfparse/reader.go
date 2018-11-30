@@ -1,27 +1,77 @@
 package dmfparse
 
 import (
+	"encoding/binary"
 	"io"
+	"io/ioutil"
 )
 
-type safeReader struct {
+type panicReader struct {
 	reader io.Reader
-	err    error
+	eof    bool
 }
 
-func (r safeReader) Read(buf []byte) (n int, err error) {
-	n, err = r.reader.Read(buf)
-	if err != nil {
-		panic(ReaderFailure{OutErr: err})
+func (pr *panicReader) handleError(err error) {
+	switch err {
+	case nil:
+		return
+	case io.EOF:
+		pr.eof = true
+	default:
+		panic(err)
 	}
-
-	return
 }
 
-type ReaderFailure struct {
-	OutErr error
+func (pr *panicReader) ReadSlice(p []byte) int {
+	n, err := pr.reader.Read(p)
+	pr.handleError(err)
+
+	return n
 }
 
-func (err ReaderFailure) Error() string {
-	return "failed to read DMF file: " + err.OutErr.Error()
+func (pr *panicReader) Read8() byte {
+	var b byte
+	err := binary.Read(pr.reader, binary.LittleEndian, &b)
+	pr.handleError(err)
+
+	return b
+}
+
+func (pr *panicReader) Read16() int16 {
+	var s int16
+	err := binary.Read(pr.reader, binary.LittleEndian, &s)
+	pr.handleError(err)
+
+	return s
+}
+
+func (pr *panicReader) Read32() int32 {
+	var i int32
+	err := binary.Read(pr.reader, binary.LittleEndian, &i)
+	pr.handleError(err)
+
+	return i
+}
+
+func (pr *panicReader) Read32U() uint32 {
+	var u uint32
+	err := binary.Read(pr.reader, binary.LittleEndian, &u)
+	pr.handleError(err)
+
+	return u
+}
+
+func (pr *panicReader) ReadString(size int) string {
+	buf := make([]byte, size)
+	pr.ReadSlice(buf)
+	return string(buf)
+}
+
+func (pr *panicReader) ReadPascalString() string {
+	size := pr.Read8()
+	return pr.ReadString(int(size))
+}
+
+func (pr *panicReader) Skip(bytes int) {
+	io.CopyN(ioutil.Discard, pr.reader, int64(bytes))
 }

@@ -9,9 +9,9 @@ type Song struct {
 	TickTime2       int
 	FramesPerSecond int
 
-	Matrix      [][]int
+	Matrix      [10][]int
 	Instruments []Instrument
-	Channels    [10][]Pattern
+	Channels    [10]Channel
 	Samples     []Sample
 }
 
@@ -41,12 +41,12 @@ type InstrumentFM struct {
 }
 
 // Name returns FM instrument name
-func (fm *InstrumentFM) Name() string {
+func (fm InstrumentFM) Name() string {
 	return fm.name
 }
 
 // Type returns InstType constant
-func (*InstrumentFM) Type() InstType {
+func (InstrumentFM) Type() InstType {
 	return FM
 }
 
@@ -60,24 +60,24 @@ type InstrumentSTD struct {
 }
 
 // Name returns STD instrument name
-func (std *InstrumentSTD) Name() string {
+func (std InstrumentSTD) Name() string {
 	return std.name
 }
 
 // Type returns InstType constant
-func (*InstrumentSTD) Type() InstType {
+func (InstrumentSTD) Type() InstType {
 	return STD
 }
 
-// Pattern represents DMF pattern
-type Pattern struct {
+// Channel represents one DefleMask channel
+type Channel struct {
 	effectsAmount int
-	Rows          []Row
+	Rows          [][]Row
 }
 
 // Row represents DMF row
 type Row struct {
-	parent *Pattern
+	parent *Channel
 
 	Note    int16
 	Octave  int16
