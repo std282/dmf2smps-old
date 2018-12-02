@@ -10,3 +10,12 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+
+# DefleMask Specifications
+DMF_SPECS.txt
+
+# DMF conversion info
+*.dmf2smps-conf
+
+# DMF modules
+*.dmf
