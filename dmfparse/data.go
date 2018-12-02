@@ -37,7 +37,7 @@ type InstrumentFM struct {
 
 	ALG, FB, LFO, LFO2 byte
 
-	AM, AR, DR, MULT, RR, SL, TL, DT2, RS, D2R, SSG [4]byte
+	AM, AR, DR, MULT, RR, SL, TL, DT2, RS, DT, D2R, SSG [4]byte
 }
 
 // Name returns FM instrument name
@@ -55,8 +55,8 @@ type InstrumentSTD struct {
 	name string
 
 	VolumeEnv, ArpeggioEnv, NoiseEnv    []int32
-	VolumeLoop, ArpeggioLoop, NoiseLoop bool
-	ArpeggioMode                        bool
+	VolumeLoop, ArpeggioLoop, NoiseLoop int
+	ArpeggioMode                        int
 }
 
 // Name returns STD instrument name
