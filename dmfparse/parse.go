@@ -11,8 +11,7 @@ func localError(description string) {
 }
 
 func localErrorf(format string, args ...interface{}) {
-	log.Panicf(
-		"dmfparse: "+format, args...)
+	log.Panicf("dmfparse: "+format, args...)
 }
 
 // Parse parses DMF song which is being read from reader
@@ -26,6 +25,9 @@ func (song *Song) Parse(r io.Reader) (err error) {
 	}
 	if version := pr.Read8(); version != 24 {
 		localErrorf("unsupported version (%v), must be 24", version)
+	}
+	if system := pr.Read8(); system != 2 {
+		localErrorf("this system is not supported, use SEGA Genesis")
 	}
 
 	// Actual parsing
@@ -119,25 +121,79 @@ func (song *Song) parse(pr panicReader) {
 }
 
 func (inst *InstrumentFM) parse(pr panicReader) {
-	// TODO
+	inst.ALG = pr.Read8()
+	inst.FB = pr.Read8()
+	inst.LFO = pr.Read8()
+	inst.LFO2 = pr.Read8()
+	opseq := []int{1, 3, 2, 4}
+	for _, op := range opseq {
+		i := op - 1
+		inst.AM[i] = pr.Read8()
+		inst.AR[i] = pr.Read8()
+		inst.DR[i] = pr.Read8()
+		inst.MULT[i] = pr.Read8()
+		inst.RR[i] = pr.Read8()
+		inst.SL[i] = pr.Read8()
+		inst.TL[i] = pr.Read8()
+		inst.DT2[i] = pr.Read8()
+		inst.RS[i] = pr.Read8()
+		inst.DT[i] = pr.Read8()
+		inst.D2R[i] = pr.Read8()
+		inst.SSG[i] = pr.Read8()
+	}
 }
 
 func (inst *InstrumentSTD) parse(pr panicReader) {
-	// TODO
+	if vollen := pr.Read8(); vollen > 0 {
+		inst.VolumeEnv = make([]int32, vollen)
+		pr.ReadAny(inst.VolumeEnv)
+		inst.VolumeLoop = int(pr.Read8s())
+	}
+
+	if arplen := pr.Read8(); arplen > 0 {
+		inst.ArpeggioEnv = make([]int32, arplen)
+		pr.ReadAny(inst.ArpeggioEnv)
+		inst.ArpeggioLoop = int(pr.Read8s())
+	}
+	inst.ArpeggioMode = int(pr.Read8())
+
+	if noilen := pr.Read8(); noilen > 0 {
+		inst.NoiseEnv = make([]int32, noilen)
+		pr.ReadAny(inst.NoiseEnv)
+		inst.NoiseLoop = int(pr.Read8s())
+	}
+
+	if wtlen := pr.Read8(); wtlen > 0 {
+		pr.Skip(int(wtlen))
+	}
 }
 
 func (ch *Channel) parse(pr panicReader) {
-	// TODO
+	ch.effectsAmount = int(pr.Read8())
+	for i := range ch.Rows {
+		for j := range ch.Rows[i] {
+			ch.Rows[i][j].parse(pr)
+		}
+	}
 }
 
 func (row *Row) parse(pr panicReader) {
-	// TODO
+	row.Note = pr.Read16()
+	row.Octave = pr.Read16()
+	row.Volume = pr.Read16()
+	for i := range row.Effects {
+		row.Effects[i].parse(pr)
+	}
+	row.InstNum = pr.Read16()
 }
 
 func (fx *Effect) parse(pr panicReader) {
-	// TODO
+	fx.Type = pr.Read16()
+	fx.Byte = pr.Read16()
 }
 
 func (samp *Sample) parse(pr panicReader) {
-	// TODO
+	size := int(pr.Read32())
+	samp.Name = pr.ReadPascalString()
+	pr.Skip(4 + 2*size)
 }
