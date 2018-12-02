@@ -172,6 +172,7 @@ func (ch *Channel) parse(pr panicReader) {
 	ch.effectsAmount = int(pr.Read8())
 	for i := range ch.Rows {
 		for j := range ch.Rows[i] {
+			ch.Rows[i][j].Effects = make([]Effect, ch.effectsAmount)
 			ch.Rows[i][j].parse(pr)
 		}
 	}
