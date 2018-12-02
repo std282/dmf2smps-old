@@ -22,15 +22,21 @@ func (pr *panicReader) handleError(err error) {
 	}
 }
 
-func (pr *panicReader) ReadSlice(p []byte) int {
-	n, err := pr.reader.Read(p)
+func (pr *panicReader) ReadAny(p interface{}) {
+	err := binary.Read(pr.reader, binary.LittleEndian, p)
 	pr.handleError(err)
-
-	return n
 }
 
 func (pr *panicReader) Read8() byte {
 	var b byte
+	err := binary.Read(pr.reader, binary.LittleEndian, &b)
+	pr.handleError(err)
+
+	return b
+}
+
+func (pr *panicReader) Read8s() int8 {
+	var b int8
 	err := binary.Read(pr.reader, binary.LittleEndian, &b)
 	pr.handleError(err)
 
@@ -63,7 +69,8 @@ func (pr *panicReader) Read32U() uint32 {
 
 func (pr *panicReader) ReadString(size int) string {
 	buf := make([]byte, size)
-	pr.ReadSlice(buf)
+	_, err := pr.reader.Read(buf)
+	pr.handleError(err)
 	return string(buf)
 }
 
