@@ -27,7 +27,7 @@ type Song struct {
 	data list.List
 }
 
-// Exportable describes a thing that can be exported
+// Exportable describes a thing that can be exported in binary format
 type Exportable interface {
 	Size() uint
 	Export(w io.Writer)
@@ -51,20 +51,20 @@ type AbsAddress struct {
 	pointer uint16
 }
 
-// Refer makes address refer to a chunk of bytes
+// Refer makes address refer to a chunk of bytes which position is unknown
 func (addr *AbsAddress) Refer(chunk *Chunk) {
 	addr.refto = chunk           // make address refer to chunk
 	chunk.reffrom.PushBack(addr) // notify the chunk about being referenced
 }
 
-// Size returns a size of address when exported
-func (*AbsAddress) Size() uint {
-	return 2
-}
-
 // Set sets address to location "from"
 func (addr *AbsAddress) Set(from uint) {
 	addr.pointer = uint16(from)
+}
+
+// Size returns a size of address when exported
+func (*AbsAddress) Size() uint {
+	return 2
 }
 
 // RelAddress represents deferring evaluation relative address
