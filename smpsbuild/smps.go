@@ -1,36 +1,51 @@
 package smpsbuild
 
+/*
+	struct
+		Song
+		Voice
+		AbsAddress
+		RelAddress
+		Chunk
+
+	interface
+		Exportable
+		Address
+
+*/
+
 import (
+	"bytes"
 	"container/list"
-	"io"
 )
 
 // Song represents SMPS song
 type Song struct {
 	// Main header data
-	Voices        []Voice
+	voices        []Voice
 	TempoDivider  int
 	TempoModifier int
-	ChannelsFM    int
-	ChannelsPSG   int
+	channelsFM    int
+	channelsPSG   int
 
 	// Channel header data
-	OffsetFM  []AbsAddress
-	VolumeFM  []int
-	PitchFM   []int
-	OffsetPSG []AbsAddress
-	VolumePSG []int
-	PitchPSG  []int
-	VoicePSG  []int
+	offsetFM  []AbsAddress
+	volumeFM  []int
+	pitchFM   []int
+	offsetPSG []AbsAddress
+	volumePSG []int
+	pitchPSG  []int
+	voicePSG  []int
 
 	// Note data
 	data list.List
 }
 
-// Exportable describes a thing that can be exported in binary format
-type Exportable interface {
-	Size() uint
-	Export(w io.Writer)
+func (song *Song) headerSize() uint {
+	// 6 bytes for main header
+	// 4 * FMChannels for FM channel header
+	// 6 * PSGChannels for PSG channel header
+	return uint(6 + song.channelsFM*4 + song.channelsPSG*6)
 }
 
 // Voice represents SMPS FM voice
@@ -40,21 +55,22 @@ type Voice struct {
 	MULT, DT, AR, RS, DR, SR, RR, SL, TL [4]int
 }
 
-// Size returns size of a voice when exported
-func (*Voice) Size() uint {
-	return 25
+// Address describes reference to a chunk of bytes
+type Address interface {
+	Set(from uint)         // sets address
+	Refer(ref Addressable) // address will be set later
 }
 
 // AbsAddress represents deferring evaluation absolute address
 type AbsAddress struct {
-	refto   *Chunk
-	pointer uint16
+	referencesTo Addressable
+	pointer      uint16
 }
 
 // Refer makes address refer to a chunk of bytes which position is unknown
-func (addr *AbsAddress) Refer(chunk *Chunk) {
-	addr.refto = chunk           // make address refer to chunk
-	chunk.reffrom.PushBack(addr) // notify the chunk about being referenced
+func (addr *AbsAddress) Refer(ref Addressable) {
+	addr.referencesTo = ref // make address refer to chunk
+	ref.Notify(addr)        // notify the chunk about being referenced
 }
 
 // Set sets address to location "from"
@@ -62,21 +78,11 @@ func (addr *AbsAddress) Set(from uint) {
 	addr.pointer = uint16(from)
 }
 
-// Size returns a size of address when exported
-func (*AbsAddress) Size() uint {
-	return 2
-}
-
 // RelAddress represents deferring evaluation relative address
 type RelAddress struct {
-	refto    *Chunk
+	refto    Addressable
 	location uint
 	pointer  int16
-}
-
-// Size returns a size of address when exported
-func (*RelAddress) Size() uint {
-	return 2
 }
 
 // Set sets pointer to location "from"
@@ -85,34 +91,43 @@ func (addr *RelAddress) Set(from uint) {
 }
 
 // Refer makes address refer to a chunk of bytes
-func (addr *RelAddress) Refer(chunk *Chunk) {
-	addr.refto = chunk           // make address refer to chunk
-	chunk.reffrom.PushBack(addr) // notify the chunk about being referenced
+func (addr *RelAddress) Refer(ref Addressable) {
+	addr.refto = ref
+	ref.Notify(addr)
 }
 
-// Address describes reference to a chunk of bytes
-type Address interface {
-	Set(from uint)      // sets address
-	Refer(chunk *Chunk) // address will be set later
-}
-
-// Chunk represents a byte array
+// Chunk represents and exportable chunk of raw bytes
 type Chunk struct {
-	data    []byte
-	reffrom list.List
+	buf bytes.Buffer
 }
 
-// Size returns size of chunk when exported
-func (chunk *Chunk) Size() uint {
-	return uint(len(chunk.data))
+// Addressable desribes anything that could be referenced
+type Addressable interface {
+	Notify(byWhom Address)
+	Visit(curPos uint)
 }
 
-// VisitReferences visits all addresses referenced to a current chunk and sets
-// their pointers to a value of counter
-func (chunk *Chunk) VisitReferences(counter uint) {
-	for elem := chunk.reffrom.Front(); elem != nil; elem = elem.Next() {
-		if val, ok := elem.Value.(Address); ok {
-			val.Set(counter)
+// Pattern represents any addressable sequence of SMPS events
+type Pattern struct {
+	events   list.List
+	refdFrom list.List
+
+	lastIsBytes bool
+}
+
+// Notify tells pattern that someone referenced him, but doesn't know what
+// address it has. It is for pattern to be able to call back the referer and
+// tell them the address
+func (pat *Pattern) Notify(byWhom Address) {
+	pat.refdFrom.PushBack(byWhom)
+}
+
+// Visit makes pattern to look at who asked him to tell his address and actually
+// set their address
+func (pat *Pattern) Visit(curPos uint) {
+	for el := pat.refdFrom.Front(); el != nil; el = el.Next() {
+		if addr, ok := el.Value.(Address); ok {
+			addr.Set(curPos)
 		}
 	}
 }
