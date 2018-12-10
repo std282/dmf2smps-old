@@ -1,11 +1,11 @@
 package smpsbuild
 
-// Channel represents a channel ID
-type Channel int
+// channel represents a channel ID
+type channel int
 
 const (
 	// DAC channel
-	DAC Channel = iota
+	DAC channel = iota
 	// FM1 channel
 	FM1
 	// FM2 channel
@@ -27,7 +27,7 @@ const (
 )
 
 // SetChannelInitPattern sets pattern that channel starts to play from
-func (song *Song) SetChannelInitPattern(c Channel, pat *Pattern) {
+func (song *Song) SetChannelInitPattern(c channel, pat *Pattern) {
 	switch c {
 	case DAC, FM1, FM2, FM3, FM4, FM5, FM6:
 		song.offsetFM[int(c)].Refer(pat)

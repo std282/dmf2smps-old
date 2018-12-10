@@ -16,6 +16,6 @@ func (song *Song) SetupChannels(fm int, psg int) {
 }
 
 // AddVoice adds one more voice to the song
-func (song *Song) AddVoice(vc *Voice) {
-	song.voices = append(song.voices, *vc)
+func (song *Song) AddVoice(vc Voice) {
+	song.voices = append(song.voices, vc)
 }

@@ -81,8 +81,7 @@ func (pat *Pattern) Size() (uint, error) {
 
 // Export exports song
 func (song *Song) Export(w io.Writer) error {
-	count := song.headerSize()
-	voicePtr := AbsAddress{pointer: uint16(count)}
+	voicePtr := AbsAddress{pointer: uint16(song.headerSize())}
 	voicePtr.Export(w)
 
 	w.Write([]byte{
@@ -204,4 +203,17 @@ func (pat *Pattern) Export(w io.Writer) error {
 	}
 
 	return nil
+}
+
+// ResolveAddresses resolves all the unsolved addresses by patterns visiting
+// and changing them
+func (song *Song) ResolveAddresses() {
+	count := song.headerSize() + uint(len(song.voices))*25
+
+	for el := song.data.Front(); el != nil; el = el.Next() {
+		pat := el.Value.(*Pattern)
+		pat.Visit(count)
+		size, _ := pat.Size()
+		count += size
+	}
 }
