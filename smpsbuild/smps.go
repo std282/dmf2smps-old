@@ -23,12 +23,13 @@ import (
 type Song struct {
 	// Main header data
 	voices        []Voice
-	TempoDivider  int
-	TempoModifier int
+	tempoDivider  int
+	tempoModifier int
 	channelsFM    int
 	channelsPSG   int
 
 	// Channel header data
+	offsetDAC AbsAddress
 	offsetFM  []AbsAddress
 	volumeFM  []int
 	pitchFM   []int

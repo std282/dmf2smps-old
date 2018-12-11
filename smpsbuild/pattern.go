@@ -21,3 +21,17 @@ func (pat *Pattern) AddAddress(addr Address) {
 func (song *Song) AddPattern(pat *Pattern) {
 	song.data.PushBack(pat)
 }
+
+// GetAbsAddress returns absolute address of the pattern
+func (pat *Pattern) GetAbsAddress() AbsAddress {
+	addr := AbsAddress{}
+	addr.Refer(pat)
+	return addr
+}
+
+// GetRelAddress returns relative address of the pattern
+func (pat *Pattern) GetRelAddress() RelAddress {
+	addr := RelAddress{}
+	addr.Refer(pat)
+	return addr
+}

@@ -81,17 +81,22 @@ func (pat *Pattern) Size() (uint, error) {
 
 // Export exports song
 func (song *Song) Export(w io.Writer) error {
+	song.ResolveAddresses()
+
 	voicePtr := AbsAddress{pointer: uint16(song.headerSize())}
 	voicePtr.Export(w)
 
 	w.Write([]byte{
 		byte(song.channelsFM),
 		byte(song.channelsPSG),
-		byte(song.TempoDivider),
-		byte(song.TempoModifier),
+		byte(song.tempoDivider),
+		byte(song.tempoModifier),
 	})
 
-	for i := 0; i < song.channelsFM; i++ {
+	song.offsetDAC.Export(w)
+	w.Write([]byte{0x00, 0x00})
+
+	for i := 0; i < song.channelsFM-1; i++ {
 		song.offsetFM[i].Export(w)
 
 		w.Write([]byte{
