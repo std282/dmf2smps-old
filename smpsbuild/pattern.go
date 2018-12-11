@@ -22,6 +22,13 @@ func (song *Song) AddPattern(pat *Pattern) {
 	song.data.PushBack(pat)
 }
 
+// CreatePattern creates pattern in the song and returns pointer to it
+func (song *Song) CreatePattern() *Pattern {
+	pat := Pattern{}
+	song.data.PushBack(&pat)
+	return &pat
+}
+
 // GetAbsAddress returns absolute address of the pattern
 func (pat *Pattern) GetAbsAddress() AbsAddress {
 	addr := AbsAddress{}
