@@ -19,3 +19,9 @@ DMF_SPECS.txt
 
 # DMF modules
 *.dmf
+
+# VS Code settings
+.vscode/*.*
+
+# Debug
+debug
