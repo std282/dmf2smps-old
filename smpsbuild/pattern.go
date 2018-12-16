@@ -29,15 +29,11 @@ func (song *Song) CreatePattern() *Pattern {
 	return &pat
 }
 
-// GetAbsAddress returns absolute address of the pattern
-func (pat *Pattern) GetAbsAddress() Address {
-	addr := AbsAddress{}
-	addr.Refer(pat)
-	return &addr
-}
-
-// GetRelAddress returns relative address of the pattern
-func (pat *Pattern) GetRelAddress() Address {
+// GetAddress returns relative address of the pattern.
+//
+// We do not need absolute addresses. Those are only used in headers, and they're
+// handled separately
+func (pat *Pattern) GetAddress() Address {
 	addr := RelAddress{}
 	addr.Refer(pat)
 	return &addr
