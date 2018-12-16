@@ -3,11 +3,11 @@ package smpsbuild
 // AddBytes adds bytes to pattern
 func (pat *Pattern) AddBytes(b ...byte) {
 	if !pat.lastIsBytes {
-		pat.events.PushBack(Chunk{})
+		pat.events.PushBack(&Chunk{})
 		pat.lastIsBytes = true
 	}
 
-	chunk := pat.events.Back().Value.(Chunk)
+	chunk := pat.events.Back().Value.(*Chunk)
 	chunk.buf.Write(b)
 }
 
@@ -30,15 +30,31 @@ func (song *Song) CreatePattern() *Pattern {
 }
 
 // GetAbsAddress returns absolute address of the pattern
-func (pat *Pattern) GetAbsAddress() AbsAddress {
+func (pat *Pattern) GetAbsAddress() Address {
 	addr := AbsAddress{}
 	addr.Refer(pat)
-	return addr
+	return &addr
 }
 
 // GetRelAddress returns relative address of the pattern
-func (pat *Pattern) GetRelAddress() RelAddress {
+func (pat *Pattern) GetRelAddress() Address {
 	addr := RelAddress{}
 	addr.Refer(pat)
-	return addr
+	return &addr
+}
+
+// SetRelAddrPos sets position of all relative addresses in pattern
+func (pat *Pattern) SetRelAddrPos(patPos uint) {
+	for el := pat.events.Front(); el != nil; el = el.Next() {
+		switch val := el.Value.(type) {
+		case *Chunk:
+			size, _ := val.Size()
+			patPos += size
+
+		case *RelAddress:
+			size, _ := val.Size()
+			val.location = patPos + 1
+			patPos += size
+		}
+	}
 }

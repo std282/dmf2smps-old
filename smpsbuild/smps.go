@@ -64,14 +64,14 @@ type Address interface {
 
 // AbsAddress represents deferring evaluation absolute address
 type AbsAddress struct {
-	referencesTo Addressable
-	pointer      uint16
+	refTo   Addressable
+	pointer uint16
 }
 
 // Refer makes address refer to a chunk of bytes which position is unknown
 func (addr *AbsAddress) Refer(ref Addressable) {
-	addr.referencesTo = ref // make address refer to chunk
-	ref.Notify(addr)        // notify the chunk about being referenced
+	addr.refTo = ref // make address refer to chunk
+	ref.Notify(addr) // notify the chunk about being referenced
 }
 
 // Set sets address to location "from"
@@ -81,7 +81,7 @@ func (addr *AbsAddress) Set(from uint) {
 
 // RelAddress represents deferring evaluation relative address
 type RelAddress struct {
-	refto    Addressable
+	refTo    Addressable
 	location uint
 	pointer  int16
 }
@@ -93,7 +93,7 @@ func (addr *RelAddress) Set(from uint) {
 
 // Refer makes address refer to a chunk of bytes
 func (addr *RelAddress) Refer(ref Addressable) {
-	addr.refto = ref
+	addr.refTo = ref
 	ref.Notify(addr)
 }
 

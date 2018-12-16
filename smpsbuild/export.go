@@ -120,7 +120,7 @@ func (song *Song) Export(w io.Writer) error {
 	}
 
 	for el := song.data.Front(); el != nil; el = el.Next() {
-		if pat, ok := el.Value.(Pattern); ok {
+		if pat, ok := el.Value.(*Pattern); ok {
 			err := pat.Export(w)
 			if err != nil {
 				return err
@@ -183,7 +183,7 @@ func (chunk *Chunk) Export(w io.Writer) error {
 	for err == nil {
 		n, err = chunk.buf.Read(bytebuf[:])
 		if n > 0 {
-			w.Write(bytebuf[0 : n-1])
+			w.Write(bytebuf[0:n])
 		}
 	}
 
@@ -217,6 +217,7 @@ func (song *Song) ResolveAddresses() {
 
 	for el := song.data.Front(); el != nil; el = el.Next() {
 		pat := el.Value.(*Pattern)
+		pat.SetRelAddrPos(count)
 		pat.Visit(count)
 		size, _ := pat.Size()
 		count += size
