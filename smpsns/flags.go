@@ -127,19 +127,19 @@ func SetPSGEnvelope(pat *smpsbuild.Pattern, env int) {
 }
 
 // Jump continues song execution from other location
-func Jump(pat *smpsbuild.Pattern, loc smpsbuild.RelAddress) {
+func Jump(pat *smpsbuild.Pattern, loc smpsbuild.Address) {
 	pat.AddBytes(0xF6)
-	pat.AddAddress(&loc)
+	pat.AddAddress(loc)
 }
 
 // Loop makes section from 'addr' to current location repeat several 'times'
-func Loop(pat *smpsbuild.Pattern, addr smpsbuild.RelAddress, times int, prior loopPriority) {
+func Loop(pat *smpsbuild.Pattern, addr smpsbuild.Address, times int, prior loopPriority) {
 	pat.AddBytes(0xF7, byte(prior), byte(times))
-	pat.AddAddress(&addr)
+	pat.AddAddress(addr)
 }
 
 // Call continues song execution from other location, but it will return later
-func Call(pat *smpsbuild.Pattern, loc smpsbuild.RelAddress) {
+func Call(pat *smpsbuild.Pattern, loc smpsbuild.Address) {
 	pat.AddBytes(0xF8)
-	pat.AddAddress(&loc)
+	pat.AddAddress(loc)
 }
