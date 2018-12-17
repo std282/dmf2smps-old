@@ -1,134 +1,110 @@
 package smpsbuild
 
-/*
-	struct
-		Song
-		Voice
-		AbsAddress
-		RelAddress
-		Chunk
-
-	interface
-		Exportable
-		Address
-
-*/
-
 import (
-	"bytes"
 	"container/list"
+	"io"
+	"log"
 )
 
 // Song represents SMPS song
 type Song struct {
 	// Main header data
-	voices        []Voice
-	tempoDivider  int
-	tempoModifier int
-	channelsFM    int
-	channelsPSG   int
+	voices        []Voice // FM voices
+	tempoDivider  int     // self-explanatory
+	tempoModifier int     // self-explanatory
+	channelsFM    int     // amount of FM channels + DAC
+	channelsPSG   int     // amount of PSG channels
 
 	// Channel header data
-	offsetDAC AbsAddress
-	offsetFM  []AbsAddress
-	volumeFM  []int
-	pitchFM   []int
-	offsetPSG []AbsAddress
-	volumePSG []int
-	pitchPSG  []int
-	voicePSG  []int
+	offsetDAC absAddress   // pointer to initial DAC pattern
+	offsetFM  []absAddress // pointers to initial FM patterns
+	volumeFM  []int        // initial volume of FM channels
+	pitchFM   []int        // initial pitch of FM channels
+	offsetPSG []absAddress // pointers to initial PSG patterns
+	volumePSG []int        // initial volume of PSG channels
+	pitchPSG  []int        // initial pitch of PSG channels
+	voicePSG  []int        // initial voice of PSG channels
 
 	// Note data
-	data list.List
+	data list.List // patterns list
 }
 
-func (song *Song) headerSize() uint {
-	// 6 bytes for main header
-	// 4 * FMChannels for FM channel header
-	// 6 * PSGChannels for PSG channel header
-	return uint(6 + song.channelsFM*4 + song.channelsPSG*6)
+// NewSong creates a new valid SMPS song
+func NewSong() (song Song) {
+	return Song{tempoDivider: 1}
 }
 
 // Voice represents SMPS FM voice
 type Voice struct {
+	/* Feedback, Algorithm */
 	FB, ALG int
 
+	/* For operators 1, 3, 2, 4:
+	 * -- Frequency multiplier
+	 * -- Detune amount
+	 * -- Attack rate
+	 * -- Rate scaling factor
+	 * -- Detune rate
+	 * -- Sustain rate
+	 * -- Release rate
+	 * -- Sustain level
+	 * -- Total level
+	 */
 	MULT, DT, AR, RS, DR, SR, RR, SL, TL [4]int
 }
 
-// Address describes reference to a chunk of bytes
-type Address interface {
-	Set(from uint)         // sets address
-	Refer(ref Addressable) // address will be set later
+// Assemble exports SMPS song to binary
+func (song *Song) Assemble(w io.Writer) {
+	song.resolveAddresses()
+	song.export(w)
 }
 
-// AbsAddress represents deferring evaluation absolute address
-type AbsAddress struct {
-	refTo   Addressable
-	pointer uint16
+// SetupChannels sets song up for filling
+func (song *Song) SetupChannels(fm int, psg int) {
+	song.channelsFM = fm
+	song.channelsPSG = psg
+
+	// DAC is considered FM channel; so there is one less FM channel than declared
+	song.offsetFM = make([]absAddress, fm-1)
+	song.pitchFM = make([]int, fm-1)
+	song.volumeFM = make([]int, fm-1)
+
+	song.offsetPSG = make([]absAddress, psg)
+	song.pitchPSG = make([]int, psg)
+	song.volumePSG = make([]int, psg)
+	song.voicePSG = make([]int, psg)
 }
 
-// Refer makes address refer to a chunk of bytes which position is unknown
-func (addr *AbsAddress) Refer(ref Addressable) {
-	addr.refTo = ref // make address refer to chunk
-	ref.Notify(addr) // notify the chunk about being referenced
+// SetupTempo sets up SMPS tempo
+func (song *Song) SetupTempo(div int, mod int) {
+	song.tempoDivider = div
+	song.tempoModifier = mod
 }
 
-// Set sets address to location "from"
-func (addr *AbsAddress) Set(from uint) {
-	addr.pointer = uint16(from)
+// AddVoice adds one more voice to the song
+func (song *Song) AddVoice(vc Voice) {
+	song.voices = append(song.voices, vc)
 }
 
-// RelAddress represents deferring evaluation relative address
-type RelAddress struct {
-	refTo    Addressable
-	location uint
-	pointer  int16
-}
-
-// Set sets pointer to location "from"
-func (addr *RelAddress) Set(from uint) {
-	addr.pointer = int16(from - addr.location)
-}
-
-// Refer makes address refer to a chunk of bytes
-func (addr *RelAddress) Refer(ref Addressable) {
-	addr.refTo = ref
-	ref.Notify(addr)
-}
-
-// Chunk represents and exportable chunk of raw bytes
-type Chunk struct {
-	buf bytes.Buffer
-}
-
-// Addressable desribes anything that could be referenced
-type Addressable interface {
-	Notify(byWhom Address)
-	Visit(curPos uint)
-}
-
-// Pattern represents any addressable sequence of SMPS events
-type Pattern struct {
-	events   list.List
-	refdFrom list.List
-
-	lastIsBytes bool
-}
-
-// Notify tells pattern that someone referenced him, but doesn't know what
-// address it has. It is for pattern to be able to call back the referer and
-// tell them the address
-func (pat *Pattern) Notify(byWhom Address) {
-	pat.refdFrom.PushBack(byWhom)
-}
-
-// Visit makes pattern to look at who asked him to tell his address and actually
-// set their address
-func (pat *Pattern) Visit(curPos uint) {
-	for el := pat.refdFrom.Front(); el != nil; el = el.Next() {
-		if addr, ok := el.Value.(Address); ok {
-			addr.Set(curPos)
-		}
+// SetFMInitParams sets FM channel initial parameters
+func (song *Song) SetFMInitParams(fm channel, vol int, pitch int) {
+	pos := int(fm - FM1)
+	if pos < 0 || pos > 5 {
+		log.Fatal("smpsbuild: addressed non-FM channel when expected FM")
 	}
+
+	song.volumeFM[pos] = vol
+	song.pitchFM[pos] = pitch
+}
+
+// SetPSGInitParams sets PSG channel initial parameters
+func (song *Song) SetPSGInitParams(psg channel, vol int, pitch int, env int) {
+	pos := int(psg - PSG1)
+	if pos < 0 {
+		log.Fatal("smpsbuild: addressed non-PSG channel when expected PSG")
+	}
+
+	song.volumePSG[pos] = vol
+	song.pitchPSG[pos] = pitch
+	song.voicePSG[pos] = env
 }

@@ -1,13 +1,24 @@
 package smpsbuild
 
-// AddBytes adds bytes to pattern
+import "container/list"
+
+// Pattern represents any addressable sequence of SMPS events (like notes,
+// coordination flags...)
+type Pattern struct {
+	events   list.List // chunks, addresses
+	refdFrom list.List // addresses that refer to this pattern
+
+	lastIsBytes bool // true, if last event is chunk of bytes
+}
+
+// AddBytes adds raw bytes to pattern
 func (pat *Pattern) AddBytes(b ...byte) {
 	if !pat.lastIsBytes {
-		pat.events.PushBack(&Chunk{})
+		pat.events.PushBack(&byteChunk{})
 		pat.lastIsBytes = true
 	}
 
-	chunk := pat.events.Back().Value.(*Chunk)
+	chunk := pat.events.Back().Value.(*byteChunk)
 	chunk.buf.Write(b)
 }
 
@@ -15,11 +26,6 @@ func (pat *Pattern) AddBytes(b ...byte) {
 func (pat *Pattern) AddAddress(addr Address) {
 	pat.events.PushBack(addr)
 	pat.lastIsBytes = false
-}
-
-// AddPattern appends one pattern to the song
-func (song *Song) AddPattern(pat *Pattern) {
-	song.data.PushBack(pat)
 }
 
 // CreatePattern creates pattern in the song and returns pointer to it
@@ -34,23 +40,21 @@ func (song *Song) CreatePattern() *Pattern {
 // We do not need absolute addresses. Those are only used in headers, and they're
 // handled separately
 func (pat *Pattern) GetAddress() Address {
-	addr := RelAddress{}
-	addr.Refer(pat)
+	addr := relAddress{}
+	addr.refer(pat)
 	return &addr
 }
 
-// SetRelAddrPos sets position of all relative addresses in pattern
-func (pat *Pattern) SetRelAddrPos(patPos uint) {
+// Resolve every referenced-to address
+func (pat *Pattern) setRelAddrPos(patPos uint) {
 	for el := pat.events.Front(); el != nil; el = el.Next() {
 		switch val := el.Value.(type) {
-		case *Chunk:
-			size, _ := val.Size()
-			patPos += size
+		case *byteChunk:
+			patPos += val.sizeOf()
 
-		case *RelAddress:
-			size, _ := val.Size()
+		case *relAddress:
 			val.location = patPos + 1
-			patPos += size
+			patPos += val.sizeOf()
 		}
 	}
 }

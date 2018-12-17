@@ -2,89 +2,65 @@ package smpsbuild
 
 import (
 	"encoding/binary"
-	"errors"
 	"io"
+	"log"
 )
 
-/*
-	- Exportable interface declaration:
-		Size() uint
-		Export(io.Writer)
-	- Exportable implementation for:
-		Song
-		Voice
-		AbsAddress
-		RelAddress
-		Chunk
-*/
-
-// Exportable describes a thing that can be exported in binary format
-type Exportable interface {
-	Size() (uint, error)
-	Export(w io.Writer) error
+// Anything that could be exported in SMPS
+type exportable interface {
+	sizeOf() uint       // tells the size in bytes when exported
+	export(w io.Writer) // exports to byte writer
 }
 
-// Size returns size of an exported song
-func (song *Song) Size() (uint, error) {
+func (song *Song) sizeOf() uint {
 	retSize := song.headerSize()
 	for i := range song.voices {
-		size, _ := song.voices[i].Size()
-		retSize += size
+		retSize += song.voices[i].sizeOf()
 	}
 
 	for elem := song.data.Front(); elem != nil; elem = elem.Next() {
 		if val, ok := elem.Value.(Pattern); ok {
-			size, _ := val.Size()
-			retSize += size
+			retSize += val.sizeOf()
 		} else {
-			return retSize, errors.New("unexportable thing in song.data")
+			log.Fatal("smpsbuild: non-exportable entity in song.data")
 		}
 	}
 
-	return retSize, nil
+	return retSize
 }
 
-// Size returns size of an exported voice
-func (*Voice) Size() (uint, error) {
-	return 25, nil
+func (*Voice) sizeOf() uint {
+	return 25
 }
 
-// Size returns size of an exported absolute address
-func (*AbsAddress) Size() (uint, error) {
-	return 2, nil
+func (*absAddress) sizeOf() uint {
+	return 2
 }
 
-// Size returns size of an exported relative address
-func (*RelAddress) Size() (uint, error) {
-	return 2, nil
+func (*relAddress) sizeOf() uint {
+	return 2
 }
 
-// Size returns size of an exported chunk of bytes
-func (chunk *Chunk) Size() (uint, error) {
-	return uint(chunk.buf.Len()), nil
+func (chunk *byteChunk) sizeOf() uint {
+	return uint(chunk.buf.Len())
 }
 
-// Size returns size of pattern
-func (pat *Pattern) Size() (uint, error) {
+func (pat *Pattern) sizeOf() uint {
 	var accumSize uint
 	for el := pat.events.Front(); el != nil; el = el.Next() {
-		if exp, ok := el.Value.(Exportable); ok {
-			size, _ := exp.Size()
-			accumSize += size
+		if exp, ok := el.Value.(exportable); ok {
+			accumSize += exp.sizeOf()
 		} else {
-			return accumSize, errors.New("non-exportable entity in pattern")
+			log.Fatal("smpsbuild: non-exportable entity in pattern")
 		}
 	}
 
-	return accumSize, nil
+	return accumSize
 }
 
-// Export exports song
-func (song *Song) Export(w io.Writer) error {
-	song.ResolveAddresses()
-
-	voicePtr := AbsAddress{pointer: uint16(song.headerSize())}
-	voicePtr.Export(w)
+func (song *Song) export(w io.Writer) {
+	voicePtr := absAddress{pointer: uint16(song.headerSize())}
+	voicePtr.export(w)
 
 	w.Write([]byte{
 		byte(song.channelsFM),
@@ -93,11 +69,11 @@ func (song *Song) Export(w io.Writer) error {
 		byte(song.tempoModifier),
 	})
 
-	song.offsetDAC.Export(w)
+	song.offsetDAC.export(w)
 	w.Write([]byte{0x00, 0x00})
 
 	for i := 0; i < song.channelsFM-1; i++ {
-		song.offsetFM[i].Export(w)
+		song.offsetFM[i].export(w)
 
 		w.Write([]byte{
 			byte(song.pitchFM[i]),
@@ -106,7 +82,7 @@ func (song *Song) Export(w io.Writer) error {
 	}
 
 	for i := 0; i < song.channelsPSG; i++ {
-		song.offsetPSG[i].Export(w)
+		song.offsetPSG[i].export(w)
 
 		w.Write([]byte{
 			byte(song.pitchPSG[i]),
@@ -116,25 +92,19 @@ func (song *Song) Export(w io.Writer) error {
 	}
 
 	for i := range song.voices {
-		song.voices[i].Export(w)
+		song.voices[i].export(w)
 	}
 
 	for el := song.data.Front(); el != nil; el = el.Next() {
 		if pat, ok := el.Value.(*Pattern); ok {
-			err := pat.Export(w)
-			if err != nil {
-				return err
-			}
+			pat.export(w)
 		} else {
-			return errors.New("non-exportable entity in song.data")
+			log.Fatal("smpsbuild: non-exportable entity in song.data")
 		}
 	}
-
-	return nil
 }
 
-// Export exports voice
-func (voice *Voice) Export(w io.Writer) (err error) {
+func (voice *Voice) export(w io.Writer) {
 	var voiceRepr [25]byte
 
 	// 0 0 (3 bits of FB) (3 bits of ALG)
@@ -160,22 +130,29 @@ func (voice *Voice) Export(w io.Writer) (err error) {
 		voiceRepr[21+i] = byte(voice.TL[i])
 	}
 
-	_, err = w.Write(voiceRepr[:])
+	_, err := w.Write(voiceRepr[:])
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
 	return
 }
 
-// Export exports absolute address
-func (addr *AbsAddress) Export(w io.Writer) error {
-	return binary.Write(w, binary.BigEndian, addr.pointer)
+func (addr *absAddress) export(w io.Writer) {
+	err := binary.Write(w, binary.BigEndian, addr.pointer)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 }
 
-// Export exports relative address
-func (addr *RelAddress) Export(w io.Writer) error {
-	return binary.Write(w, binary.BigEndian, addr.pointer)
+func (addr *relAddress) export(w io.Writer) {
+	err := binary.Write(w, binary.BigEndian, addr.pointer)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 }
 
-// Export exports chunk of bytes
-func (chunk *Chunk) Export(w io.Writer) error {
+func (chunk *byteChunk) export(w io.Writer) {
 	var bytebuf [256]byte
 
 	var err error
@@ -187,39 +164,37 @@ func (chunk *Chunk) Export(w io.Writer) error {
 		}
 	}
 
-	if err == io.EOF {
-		return nil
+	if err != io.EOF {
+		log.Fatal(err.Error())
 	}
-
-	return err
 }
 
-// Export exports pattern
-func (pat *Pattern) Export(w io.Writer) error {
+func (pat *Pattern) export(w io.Writer) {
 	for el := pat.events.Front(); el != nil; el = el.Next() {
-		if exp, ok := el.Value.(Exportable); ok {
-			err := exp.Export(w)
-			if err != nil {
-				return err
-			}
+		if exp, ok := el.Value.(exportable); ok {
+			exp.export(w)
 		} else {
-			return errors.New("non-exportable entity in pattern")
+			log.Fatal("smpsbuild: non-exportable entity in pattern")
 		}
 	}
-
-	return nil
 }
 
-// ResolveAddresses resolves all the unsolved addresses by patterns visiting
-// and changing them
-func (song *Song) ResolveAddresses() {
+// Resolves every address in song
+func (song *Song) resolveAddresses() {
 	count := song.headerSize() + uint(len(song.voices))*25
 
 	for el := song.data.Front(); el != nil; el = el.Next() {
-		pat := el.Value.(*Pattern)
-		pat.SetRelAddrPos(count)
-		pat.Visit(count)
-		size, _ := pat.Size()
+		pat, ok := el.Value.(*Pattern)
+		if !ok {
+			log.Fatalf(
+				"smpsbuild: song contains something that is not a pattern: %T",
+				el.Value,
+			)
+		}
+
+		pat.setRelAddrPos(count)
+		pat.visit(count)
+		size := pat.sizeOf()
 		count += size
 	}
 }
