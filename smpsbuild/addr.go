@@ -1,52 +1,74 @@
 package smpsbuild
 
-import "errors"
+import (
+	"bytes"
+)
 
-// SetupChannels sets song up for filling
-func (song *Song) SetupChannels(fm int, psg int) {
-	song.channelsFM = fm
-	song.channelsPSG = psg
-
-	song.offsetFM = make([]AbsAddress, fm-1)
-	song.pitchFM = make([]int, fm-1)
-	song.volumeFM = make([]int, fm-1)
-
-	song.offsetPSG = make([]AbsAddress, psg)
-	song.pitchPSG = make([]int, psg)
-	song.volumePSG = make([]int, psg)
-	song.voicePSG = make([]int, psg)
+// Address describes reference to a chunk of bytes
+type Address interface {
+	set(from uint)         // sets address
+	refer(ref Addressable) // address will be set later
 }
 
-// SetupTempo sets up SMPS tempo
-func (song *Song) SetupTempo(div int, mod int) {
-	song.tempoDivider = div
-	song.tempoModifier = mod
+// Absolute address
+type absAddress struct {
+	refTo   Addressable // what it references to
+	pointer uint16      // its value
 }
 
-// AddVoice adds one more voice to the song
-func (song *Song) AddVoice(vc Voice) {
-	song.voices = append(song.voices, vc)
+func (addr *absAddress) refer(ref Addressable) {
+	addr.refTo = ref
+	ref.notify(addr)
 }
 
-// SetFMInitParams sets FM channel initial parameters
-func (song *Song) SetFMInitParams(fm channel, vol int, pitch int) {
-	pos := int(fm) - int(FM1)
-	if pos < 0 || pos > 5 {
-		panic(errors.New("addressed non-FM channel when expected FM"))
+func (addr *absAddress) set(from uint) {
+	addr.pointer = uint16(from)
+}
+
+// Relative address
+type relAddress struct {
+	refTo    Addressable // what it references to
+	location uint        // where it's located
+	pointer  int16       // its value
+}
+
+func (addr *relAddress) set(from uint) {
+	addr.pointer = int16(from - addr.location)
+}
+
+func (addr *relAddress) refer(ref Addressable) {
+	addr.refTo = ref
+	ref.notify(addr)
+}
+
+// A chunk of bytes
+type byteChunk struct {
+	buf bytes.Buffer // buffer that holds the bytes
+}
+
+// Addressable describes anything that could be referenced
+type Addressable interface {
+	notify(byWhom Address) // take into account about being referenced
+	visit(curPos uint)     // tell everyone referenced about position
+}
+
+func (pat *Pattern) notify(byWhom Address) {
+	pat.refdFrom.PushBack(byWhom)
+}
+
+func (pat *Pattern) visit(curPos uint) {
+	for el := pat.refdFrom.Front(); el != nil; el = el.Next() {
+		if addr, ok := el.Value.(Address); ok {
+			addr.set(curPos)
+		}
 	}
 
-	song.volumeFM[pos] = vol
-	song.pitchFM[pos] = pitch
+	pat.refdFrom.Init()
 }
 
-// SetPSGInitParams sets PSG channel initial parameters
-func (song *Song) SetPSGInitParams(psg channel, vol int, pitch int, env int) {
-	pos := int(psg) - int(PSG1)
-	if pos < 0 {
-		panic(errors.New("addressed non-PSG channel when expected PSG"))
-	}
-
-	song.volumePSG[pos] = vol
-	song.pitchPSG[pos] = pitch
-	song.voicePSG[pos] = env
+func (song *Song) headerSize() uint {
+	// 6 bytes for main header
+	// 4 * FMChannels for FM channel header
+	// 6 * PSGChannels for PSG channel header
+	return uint(6 + song.channelsFM*4 + song.channelsPSG*6)
 }
