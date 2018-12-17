@@ -7,17 +7,16 @@ import (
 )
 
 func localError(description string) {
-	log.Panic("dmfparse: " + description)
+	log.Fatal("dmfparse: " + description)
 }
 
 func localErrorf(format string, args ...interface{}) {
-	log.Panicf("dmfparse: "+format, args...)
+	log.Fatalf("dmfparse: "+format, args...)
 }
 
 // Parse parses DMF song which is being read from reader
 func (song *Song) Parse(r io.Reader) (err error) {
 	pr := panicReader{reader: r, eof: false}
-	defer recover()
 
 	// Parsing preamble and version. We quit if preamble fails
 	if preamble := pr.ReadString(16); preamble != ".DelekDefleMask." {
@@ -27,7 +26,10 @@ func (song *Song) Parse(r io.Reader) (err error) {
 		localErrorf("unsupported version (%v), must be 24", version)
 	}
 	if system := pr.Read8(); system != 2 {
-		localErrorf("this system is not supported, use SEGA Genesis")
+		localErrorf(
+			"the system (%v) is not supported, use SEGA Genesis",
+			systemName[system],
+		)
 	}
 
 	// Actual parsing
