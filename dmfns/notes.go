@@ -1,8 +1,8 @@
-package dmffx
+package dmfns
 
 const (
 	// NoteCs = note C#
-	NoteCs uint16 = iota
+	NoteCs int16 = iota
 	// NoteD = note D
 	NoteD
 	// NoteDs = note D#

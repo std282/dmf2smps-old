@@ -1,4 +1,4 @@
-package dmffx
+package dmfns
 
 const (
 	// Classic effects
