@@ -90,7 +90,7 @@ func (song *Song) AddVoice(vc Voice) {
 func (song *Song) SetFMInitParams(fm channel, vol int, pitch int) {
 	pos := int(fm - FM1)
 	if pos < 0 || pos > 5 {
-		log.Fatal("smpsbuild: addressed non-FM channel when expected FM")
+		log.Fatal("smpsbuild: error: addressed non-FM channel when expected FM")
 	}
 
 	song.volumeFM[pos] = vol
@@ -101,7 +101,7 @@ func (song *Song) SetFMInitParams(fm channel, vol int, pitch int) {
 func (song *Song) SetPSGInitParams(psg channel, vol int, pitch int, env int) {
 	pos := int(psg - PSG1)
 	if pos < 0 {
-		log.Fatal("smpsbuild: addressed non-PSG channel when expected PSG")
+		log.Fatal("smpsbuild: error: addressed non-PSG channel when expected PSG")
 	}
 
 	song.volumePSG[pos] = vol

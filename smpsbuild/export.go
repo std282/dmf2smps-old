@@ -22,7 +22,7 @@ func (song *Song) sizeOf() uint {
 		if val, ok := elem.Value.(Pattern); ok {
 			retSize += val.sizeOf()
 		} else {
-			log.Fatal("smpsbuild: non-exportable entity in song.data")
+			log.Fatal("smpsbuild: error: non-exportable entity in song.data")
 		}
 	}
 
@@ -51,7 +51,7 @@ func (pat *Pattern) sizeOf() uint {
 		if exp, ok := el.Value.(exportable); ok {
 			accumSize += exp.sizeOf()
 		} else {
-			log.Fatal("smpsbuild: non-exportable entity in pattern")
+			log.Fatal("smpsbuild: error: non-exportable entity in pattern")
 		}
 	}
 
@@ -99,7 +99,7 @@ func (song *Song) export(w io.Writer) {
 		if pat, ok := el.Value.(*Pattern); ok {
 			pat.export(w)
 		} else {
-			log.Fatal("smpsbuild: non-exportable entity in song.data")
+			log.Fatal("smpsbuild: error: non-exportable entity in song.data")
 		}
 	}
 }
@@ -132,7 +132,7 @@ func (voice *Voice) export(w io.Writer) {
 
 	_, err := w.Write(voiceRepr[:])
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal("smpsbuild: error: writer error: ", err.Error())
 	}
 
 	return
@@ -141,14 +141,14 @@ func (voice *Voice) export(w io.Writer) {
 func (addr *absAddress) export(w io.Writer) {
 	err := binary.Write(w, binary.BigEndian, addr.pointer)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal("smpsbuild: error: writer error: ", err.Error())
 	}
 }
 
 func (addr *relAddress) export(w io.Writer) {
 	err := binary.Write(w, binary.BigEndian, addr.pointer)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal("smpsbuild: error: writer error: ", err.Error())
 	}
 }
 
@@ -165,7 +165,7 @@ func (chunk *byteChunk) export(w io.Writer) {
 	}
 
 	if err != io.EOF {
-		log.Fatal(err.Error())
+		log.Fatal("smpsbuild: error: reader error: ", err.Error())
 	}
 }
 
@@ -174,7 +174,7 @@ func (pat *Pattern) export(w io.Writer) {
 		if exp, ok := el.Value.(exportable); ok {
 			exp.export(w)
 		} else {
-			log.Fatal("smpsbuild: non-exportable entity in pattern")
+			log.Fatal("smpsbuild: error: non-exportable entity in pattern")
 		}
 	}
 }
@@ -186,8 +186,8 @@ func (song *Song) resolveAddresses() {
 	for el := song.data.Front(); el != nil; el = el.Next() {
 		pat, ok := el.Value.(*Pattern)
 		if !ok {
-			log.Fatalf(
-				"smpsbuild: song contains something that is not a pattern: %T",
+			log.Fatal(
+				"smpsbuild: error: song contains something that is not a pattern:",
 				el.Value,
 			)
 		}
