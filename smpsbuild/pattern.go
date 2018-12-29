@@ -35,6 +35,24 @@ func (song *Song) CreatePattern() *Pattern {
 	return &pat
 }
 
+// RemovePattern removes the pattern from song
+func (song *Song) RemovePattern(pat *Pattern) {
+	toDelete := list.New()
+
+	for node := song.data.Front(); node != nil; node = node.Next() {
+		nodePat := node.Value.(*Pattern)
+		if nodePat == pat {
+			nodePat.unbind()
+			toDelete.PushBack(node)
+		}
+	}
+
+	for node := toDelete.Front(); node != nil; node = node.Next() {
+		del := node.Value.(*list.Element)
+		song.data.Remove(del)
+	}
+}
+
 // GetAddress returns relative address of the pattern.
 //
 // We do not need absolute addresses. Those are only used in headers, and they're

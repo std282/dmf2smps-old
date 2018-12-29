@@ -2,6 +2,7 @@ package smpsbuild
 
 import (
 	"bytes"
+	"log"
 )
 
 // Address describes reference to a chunk of bytes
@@ -50,6 +51,7 @@ type byteChunk struct {
 type Addressable interface {
 	notify(byWhom Address) // take into account about being referenced
 	visit(curPos uint)     // tell everyone referenced about position
+	unbind()               // unbinds itself from all addresses referenced it
 }
 
 func (pat *Pattern) notify(byWhom Address) {
@@ -64,6 +66,20 @@ func (pat *Pattern) visit(curPos uint) {
 	}
 
 	pat.refdFrom.Init()
+}
+
+func (pat *Pattern) unbind() {
+	count := 0
+
+	for node := pat.refdFrom.Front(); node != nil; node = node.Next() {
+		addr := node.Value.(Address)
+		addr.set(0) // points to nothing
+		count++
+	}
+
+	if count > 0 {
+		log.Printf("smpsbuild: warning: unbinding pattern with %v references", count)
+	}
 }
 
 func (song *Song) headerSize() uint {
