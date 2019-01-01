@@ -2,7 +2,6 @@ package smpsbuild
 
 import (
 	"bytes"
-	"log"
 )
 
 // Address describes reference to a chunk of bytes
@@ -78,7 +77,7 @@ func (pat *Pattern) unbind() {
 	}
 
 	if count > 0 {
-		log.Printf("smpsbuild: warning: unbinding pattern with %v references", count)
+		logger.Printf("warning: unbinding pattern with %v references", count)
 	}
 }
 

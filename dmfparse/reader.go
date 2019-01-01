@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"io"
 	"io/ioutil"
-	"log"
 )
 
 type panicReader struct {
@@ -19,7 +18,7 @@ func (pr *panicReader) handleError(err error) {
 	case io.EOF:
 		pr.eof = true
 	default:
-		log.Fatal("dmfparse: error: reading error: ", err.Error())
+		logger.Fatal("error: reading error: ", err.Error())
 	}
 }
 
