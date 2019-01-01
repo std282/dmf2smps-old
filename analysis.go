@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"strconv"
 
 	"github.com/std282/dmf2smps/dmfns"
@@ -28,7 +27,7 @@ func analyze(dmf *dmfparse.Song, path string) string {
 
 	jsonStr, err := json.MarshalIndent(dts, "", "    ")
 	if err != nil {
-		log.Fatalf("dmf2smps: error: json marshalling failed (%v)", err.Error())
+		logger.Fatalf("error: json marshalling failed (%v)", err.Error())
 	}
 
 	return string(jsonStr)
@@ -67,13 +66,13 @@ func (dts *ConvDetails) getInstData(dmf *dmfparse.Song) {
 func retrieve(jsonReader io.Reader) ConvDetails {
 	jsonRaw, err := ioutil.ReadAll(jsonReader)
 	if err != nil {
-		log.Fatal("dmf2smps: error: unable to read configuration file")
+		logger.Fatal("dmf2smps: error: unable to read configuration file")
 	}
 
 	var dts ConvDetails
 	err = json.Unmarshal(jsonRaw, &dts)
 	if err != nil {
-		log.Fatal("dmf2smps: error: unable to unmarshall JSON conversion parameters")
+		logger.Fatal("dmf2smps: error: unable to unmarshall JSON conversion parameters")
 	}
 
 	// We need to convert HEX strings to numbers in DAC map
@@ -115,7 +114,7 @@ func parseNumberInMapping(smth interface{}, pos int, name string, isDAC bool) in
 	case string:
 		val, err := strconv.ParseInt(smth.(string), 16, 8)
 		if err != nil {
-			log.Printf(
+			logger.Printf(
 				fmt.Sprint(
 					"dmf2smps: warning: in %v, could not parse 8-bit hex number at ",
 					"position %v, name \"%v\"; will treat this sample as ignored",
@@ -132,7 +131,7 @@ func parseNumberInMapping(smth interface{}, pos int, name string, isDAC bool) in
 	}
 
 	if smth != nil {
-		log.Fatalf(
+		logger.Fatalf(
 			fmt.Sprint(
 				"dmf2smps: error: in %v, field \"%v\" is of invalid type at ",
 				"position %v, name \"%v\"",
