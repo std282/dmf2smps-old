@@ -5,8 +5,20 @@ import (
 	"strconv"
 )
 
+// NewSong returns new DMF song
+func NewSong() *Song {
+	return &Song{}
+}
+
+// NewSongParse returns DMF song parsed from r
+func NewSongParse(r io.Reader) *Song {
+	song := NewSong()
+	song.Parse(r)
+	return song
+}
+
 // Parse parses DMF song which is being read from reader
-func (song *Song) Parse(r io.Reader) (err error) {
+func (song *Song) Parse(r io.Reader) {
 	pr := panicReader{reader: r, eof: false}
 
 	// Parsing preamble and version. We quit if preamble fails
@@ -14,7 +26,11 @@ func (song *Song) Parse(r io.Reader) (err error) {
 		logger.Fatal("error: file is not a DefleMask module")
 	}
 	if version := pr.Read8(); version != 24 {
-		logger.Fatalf("error: unsupported version (%v), must be 24", version)
+		logger.Printf("error: unsupported version (%v), must be 24", version)
+		logger.Fatal(
+			"hint: try to open this module in the latest version of ",
+			"DefleMask and resave it",
+		)
 	}
 	if system := pr.Read8(); system != 2 {
 		logger.Fatalf(
@@ -67,8 +83,6 @@ func (song *Song) Parse(r io.Reader) (err error) {
 	for i := range song.Samples {
 		song.Samples[i].parse(pr)
 	}
-
-	return
 }
 
 func (song *Song) parse(pr panicReader) {
