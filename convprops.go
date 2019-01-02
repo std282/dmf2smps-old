@@ -18,6 +18,7 @@ type Properties struct {
 	DecayVibrato    bool `json:"decayVibrato"`
 	RestartAfterEnd bool `json:"restartAfterEnd"`
 	ExtendedPSG     bool `json:"extendedPSG"`
+	NonDMFArpPorta  bool `json:"nonDMFArpPorta"`
 }
 
 // DACMapEntry describes single DAC sample mapping entry
