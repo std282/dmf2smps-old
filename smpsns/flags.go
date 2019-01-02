@@ -15,13 +15,14 @@ const (
 	Center panMode = 0xC0
 )
 
-type noiseMode byte
+// NoiseMode describes an
+type NoiseMode byte
 
 const (
-	// Periodic noise mode
-	Periodic noiseMode = 0xE3
-	// Random noise mode
-	Random noiseMode = 0xE7
+	// Periodic = full range periodic noise mode
+	Periodic NoiseMode = 0xE3
+	// Random = full range random noise mode
+	Random NoiseMode = 0xE7
 )
 
 type loopPriority byte
@@ -112,7 +113,7 @@ func Stop(pat *smpsbuild.Pattern) {
 }
 
 // SetNoise sets PSG3 noise mode
-func SetNoise(pat *smpsbuild.Pattern, mode noiseMode) {
+func SetNoise(pat *smpsbuild.Pattern, mode NoiseMode) {
 	pat.AddBytes(0xF3, byte(mode))
 }
 
