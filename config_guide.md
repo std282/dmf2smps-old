@@ -19,15 +19,14 @@ Here you can see an example of dmf2smps configuration.
 ```json
 {
     "file": "song_name.dmf",
-
     "params": {
         "preferFM6": false,
         "preferPSG3": false,
         "vibratoDecay": false,
         "restartAfterEnd": true,
-        "extendedPSG": false
+        "extendedPSG": false,
+        "nonDMFArpPorta": false
     },
-
     "dac": [
         {
             "note": "C",
@@ -48,7 +47,6 @@ Here you can see an example of dmf2smps configuration.
             "dacSample": null
         }
     ],
-    
     "psg": [
         {
             "number": 5,
@@ -68,14 +66,14 @@ Here you can see an example of dmf2smps configuration.
 
 Field name | Field type | Meaning
 -----------|------------|---------
-`file` | string | A path to DMF file to be converted
-`params` | object | Global parameters of conversion
-`dac` | array | Array of DAC sample mapping objects
-`psg` | array | Array of PSG mapping objects
+file | string | A path to DMF file to be converted
+params | object | Global parameters of conversion
+dac | array | Array of DAC sample mapping objects
+psg | array | Array of PSG mapping objects
 
 ### Parameters of conversion
 
-Description of `params` object
+Description of _params_ object
 
 Field name | Field type | Meaning
 -----------|------------|---------
@@ -84,10 +82,11 @@ preferPSG3 | bool | If _true_, prefer PSG3 tone over noise in SMPS
 vibratoDecay | bool | If _true_, decay all vibrato to frequency alteration
 restartAfterEnd | bool | If _true_ song will loop at start if it's finished without looping
 extendedPSG | bool | If _true_, extra PSG notes will be used for low pitches <br> Look at table in "Extended PSG Notes" chapter.
+nonDMFArpPorta | bool | If _true_, arpeggio (`00xy`) and continuous portamento (`01xx`, `02xx`) effects will be able to combine (by default portamento overrides arpeggio)
 
 ### DAC mapping object
 
-Objects of this type are contained in `dac` array.
+Objects of this type are contained in _dac_ array.
 
 Field name | Field type | Meaning
 -----------|------------|---------
@@ -98,7 +97,7 @@ dacSample | string <br> number <br> null | DAC sample number to map to, either a
 
 ### PSG mapping object
 
-Objects of this type are contained in `psg` array.
+Objects of this type are contained in _psg_ array.
 
 Field name | Field type | Meaning
 -----------|------------|---------
