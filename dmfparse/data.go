@@ -41,12 +41,12 @@ type InstrumentFM struct {
 }
 
 // Name returns FM instrument name
-func (fm InstrumentFM) Name() string {
+func (fm *InstrumentFM) Name() string {
 	return fm.name
 }
 
 // Type returns InstType constant
-func (InstrumentFM) Type() InstType {
+func (*InstrumentFM) Type() InstType {
 	return FM
 }
 
@@ -60,12 +60,12 @@ type InstrumentSTD struct {
 }
 
 // Name returns STD instrument name
-func (std InstrumentSTD) Name() string {
+func (std *InstrumentSTD) Name() string {
 	return std.name
 }
 
 // Type returns InstType constant
-func (InstrumentSTD) Type() InstType {
+func (*InstrumentSTD) Type() InstType {
 	return STD
 }
 

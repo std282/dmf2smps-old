@@ -56,12 +56,12 @@ func (song *Song) Parse(r io.Reader) {
 		case 1: // FM
 			inst := InstrumentFM{name: instName}
 			inst.parse(pr)
-			song.Instruments = append(song.Instruments, inst)
+			song.Instruments = append(song.Instruments, &inst)
 
 		case 0: // STD
 			inst := InstrumentSTD{name: instName}
 			inst.parse(pr)
-			song.Instruments = append(song.Instruments, inst)
+			song.Instruments = append(song.Instruments, &inst)
 
 		default:
 			logger.Fatalf("error: instrument #%v has invalid type", i)
