@@ -22,8 +22,8 @@ func analyze(dmf *dmfparse.Song, path string) string {
 	dts.RestartAfterEnd = true
 	dts.ExtendedPSG = false
 
-	dts.getInstData(dmf)
-	dts.getSampleData(dmf)
+	dts.GetInstData(dmf)
+	dts.GetSampleData(dmf)
 
 	jsonStr, err := json.MarshalIndent(dts, "", "    ")
 	if err != nil {
@@ -33,8 +33,8 @@ func analyze(dmf *dmfparse.Song, path string) string {
 	return string(jsonStr)
 }
 
-// Returns JSON-able array of sample mapping objects
-func (dts *ConvDetails) getSampleData(dmf *dmfparse.Song) {
+// GetSampleData returns JSON-able array of sample mapping objects
+func (dts *ConvDetails) GetSampleData(dmf *dmfparse.Song) {
 	curNote := dmfns.NoteC
 	curBank := 1
 	for i := range dmf.Samples {
@@ -54,11 +54,11 @@ func (dts *ConvDetails) getSampleData(dmf *dmfparse.Song) {
 	}
 }
 
-// Returns JSON-able array of STD instrument mapping objects
-func (dts *ConvDetails) getInstData(dmf *dmfparse.Song) {
+// GetInstData returns JSON-able array of STD instrument mapping objects
+func (dts *ConvDetails) GetInstData(dmf *dmfparse.Song) {
 	for i := range dmf.Instruments {
 		if dmf.Instruments[i].Type() == dmfparse.STD {
-			dts.addPSGEntry(i, dmf.Instruments[i].Name())
+			dts.AddPSGEntry(i, dmf.Instruments[i].Name())
 		}
 	}
 }
@@ -77,7 +77,7 @@ func retrieve(jsonReader io.Reader) ConvDetails {
 
 	// We need to convert HEX strings to numbers in DAC map
 	for i := range dts.DACMap {
-		dts.DACMap[i].Sample = parseNumberInMapping(
+		dts.DACMap[i].Sample = ParseNumberInMapping(
 			dts.DACMap[i].Sample,
 			i,
 			dts.DACMap[i].Name,
@@ -86,7 +86,7 @@ func retrieve(jsonReader io.Reader) ConvDetails {
 	}
 
 	for i := range dts.PSGMap {
-		dts.PSGMap[i].Envelope = parseNumberInMapping(
+		dts.PSGMap[i].Envelope = ParseNumberInMapping(
 			dts.PSGMap[i].Envelope,
 			i,
 			dts.PSGMap[i].Name,
@@ -97,14 +97,23 @@ func retrieve(jsonReader io.Reader) ConvDetails {
 	return dts
 }
 
-func parseNumberInMapping(smth interface{}, pos int, name string, isDAC bool) interface{} {
-	var place, field string
+// ParseNumberInMapping parses number in mapping of unspecified JSON type.
+// It can be either string or number or null.
+// String = hexadecimal number
+// Int = just number
+// Null = ignored or decayed
+func ParseNumberInMapping(smth interface{}, pos int, name string, isDAC bool) interface{} {
+	var place, field, object, nullState string
 	if isDAC {
 		place = "DAC mapping array"
 		field = "dacSample"
+		object = "sample"
+		nullState = "ignored"
 	} else {
 		place = "PSG mapping array"
 		field = "psgEnvelope"
+		object = "envelope"
+		nullState = "decayed to volume alterations"
 	}
 
 	switch smth.(type) {
@@ -117,11 +126,13 @@ func parseNumberInMapping(smth interface{}, pos int, name string, isDAC bool) in
 			logger.Printf(
 				fmt.Sprint(
 					"warning: in %v, could not parse 8-bit hex number at ",
-					"position %v, name \"%v\"; will treat this sample as ignored",
+					"position %v, name \"%v\"; will treat this %v as %v",
 				),
 				place,
 				pos,
 				name,
+				object,
+				nullState,
 			)
 
 			return nil
