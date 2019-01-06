@@ -38,7 +38,7 @@ func CheckRow(row dmfparse.Row, chNo, patNo, rowNo int) {
 	}
 }
 
-// IsEmpty returns true if row can be safely ignored
+// IsEmpty returns true if row can be considered empty
 func IsEmpty(row dmfparse.Row) bool {
 	noteEmpty := row.Note == -1
 	octvEmpty := row.Octave == -1
