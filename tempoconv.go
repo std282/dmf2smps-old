@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 var tempoMap = map[int]int{
 	30: 0x02,
 	40: 0x03,
@@ -20,7 +18,8 @@ var tempoMap = map[int]int{
 	60: 0x00,
 }
 
-func getOptimalTempo(fps int) (tempoMod int) {
+// GetOptimalTempo returns optimal tempo for specified FPS
+func GetOptimalTempo(fps int) (tempoMod int) {
 	lower := false
 	equFPS := 0
 	switch fps {
@@ -49,7 +48,7 @@ func getOptimalTempo(fps int) (tempoMod int) {
 			tempoMod = 2
 			equFPS = 30
 			lower = true
-		} else if fps < 60 {
+		} else if fps > 60 {
 			tempoMod = 0
 			equFPS = 60
 		} else {
@@ -58,11 +57,8 @@ func getOptimalTempo(fps int) (tempoMod int) {
 	}
 
 	if equFPS != 0 {
-		logger.Print(
-			fmt.Sprint(
-				"warning: unable to find perfect tempo match for FPS = %d; ",
-				"will use tempo = 01 %02.x, which is equivalent for FPS = %d",
-			),
+		logger.Printf(
+			"warning: unable to find perfect tempo match for FPS = %d; will use tempo 01 %02x, which is equivalent for FPS = %d",
 			fps,
 			tempoMod,
 			equFPS,
@@ -70,8 +66,7 @@ func getOptimalTempo(fps int) (tempoMod int) {
 
 		if lower {
 			logger.Print(
-				"hint: adjust FPS, base time and speed, so that FPS falls in ",
-				"range (30 : 60), but song plays at the same pace",
+				"hint: adjust FPS, base time and speed, so that FPS falls in range (30 : 60), but song plays at the same pace",
 			)
 		}
 	}
