@@ -29,8 +29,8 @@ type DACMapEntry struct {
 	Sample interface{} `json:"dacSample"`
 }
 
-func (cd *ConvDetails) addDACEntry(note int16, bank int, name string) {
-	cd.DACMap = append(cd.DACMap, DACMapEntry{
+func (dts *ConvDetails) addDACEntry(note int16, bank int, name string) {
+	dts.DACMap = append(dts.DACMap, DACMapEntry{
 		Note:   noteName[note],
 		Bank:   bank,
 		Name:   name,
@@ -45,8 +45,9 @@ type PSGMapEntry struct {
 	Envelope   interface{} `json:"psgEnvelope"`
 }
 
-func (cd *ConvDetails) addPSGEntry(instNum int, instName string) {
-	cd.PSGMap = append(cd.PSGMap, PSGMapEntry{
+// AddPSGEntry adds one PSG mapping entry
+func (dts *ConvDetails) AddPSGEntry(instNum int, instName string) {
+	dts.PSGMap = append(dts.PSGMap, PSGMapEntry{
 		Name:       instName,
 		InstNumber: instNum,
 		Envelope:   nil,
@@ -81,4 +82,21 @@ var noteNameInv = map[string]int16{
 	"A":  dmfns.NoteA,
 	"A#": dmfns.NoteAs,
 	"B":  dmfns.NoteB,
+}
+
+func (dts *ConvDetails) lookForDAC(note int16, bank int) int {
+	var sameNote, sameBank bool
+	for i := range dts.DACMap {
+		sameNote = noteNameInv[dts.DACMap[i].Name] == note
+		sameBank = dts.DACMap[i].Bank == bank
+		if sameNote && sameBank {
+			if samp, ok := dts.DACMap[i].Sample.(int); ok {
+				return samp
+			}
+
+			return -1
+		}
+	}
+
+	return -1
 }
