@@ -29,8 +29,8 @@ type Song struct {
 }
 
 // NewSong creates a new valid SMPS song
-func NewSong() (song Song) {
-	return Song{tempoDivider: 1}
+func NewSong() (song *Song) {
+	return &Song{tempoDivider: 1}
 }
 
 // Voice represents SMPS FM voice
