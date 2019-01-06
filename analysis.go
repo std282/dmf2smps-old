@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"strconv"
@@ -124,10 +123,7 @@ func ParseNumberInMapping(smth interface{}, pos int, name string, isDAC bool) in
 		val, err := strconv.ParseInt(smth.(string), 16, 8)
 		if err != nil {
 			logger.Printf(
-				fmt.Sprint(
-					"warning: in %v, could not parse 8-bit hex number at ",
-					"position %v, name \"%v\"; will treat this %v as %v",
-				),
+				"warning: in %v, could not parse 8-bit hex number at position %v, name \"%v\"; will treat this %v as %v",
 				place,
 				pos,
 				name,
@@ -143,10 +139,7 @@ func ParseNumberInMapping(smth interface{}, pos int, name string, isDAC bool) in
 
 	if smth != nil {
 		logger.Fatalf(
-			fmt.Sprint(
-				"error: in %v, field \"%v\" is of invalid type at ",
-				"position %v, name \"%v\"",
-			),
+			"error: in %v, field \"%v\" is of invalid type at position %v, name \"%v\"",
 			place,
 			field,
 			pos,

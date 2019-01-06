@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/std282/dmf2smps/dmfns"
 	"github.com/std282/dmf2smps/dmfparse"
 )
@@ -24,11 +22,8 @@ var chNames = []string{
 func CheckRow(row dmfparse.Row, chNo, patNo, rowNo int) {
 	for i := 0; i < row.EffectsAmount(); i++ {
 		if fx := row.Effects[i].Type; fx != -1 && !IsEffectValid(fx) {
-			logger.Println(
-				fmt.Sprint(
-					"warning: inconvertable effect (%02.X) at channel %v, ",
-					"pattern #%X, row #%d; it will be ignored",
-				),
+			logger.Printf(
+				"warning: inconvertable effect (%02.X) at channel %v, pattern #%X, row #%d; it will be ignored",
 				fx,
 				chNames[chNo],
 				patNo,
