@@ -29,7 +29,8 @@ type DACMapEntry struct {
 	Sample interface{} `json:"dacSample"`
 }
 
-func (dts *ConvDetails) addDACEntry(note int16, bank int, name string) {
+// AddDACEntry adds one DAC mapping entry
+func (dts *ConvDetails) AddDACEntry(note int16, bank int, name string) {
 	dts.DACMap = append(dts.DACMap, DACMapEntry{
 		Note:   noteName[note],
 		Bank:   bank,
@@ -82,21 +83,4 @@ var noteNameInv = map[string]int16{
 	"A":  dmfns.NoteA,
 	"A#": dmfns.NoteAs,
 	"B":  dmfns.NoteB,
-}
-
-func (dts *ConvDetails) lookForDAC(note int16, bank int) int {
-	var sameNote, sameBank bool
-	for i := range dts.DACMap {
-		sameNote = noteNameInv[dts.DACMap[i].Name] == note
-		sameBank = dts.DACMap[i].Bank == bank
-		if sameNote && sameBank {
-			if samp, ok := dts.DACMap[i].Sample.(int); ok {
-				return samp
-			}
-
-			return -1
-		}
-	}
-
-	return -1
 }
