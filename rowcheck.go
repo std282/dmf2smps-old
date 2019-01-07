@@ -23,7 +23,7 @@ func CheckRow(row dmfparse.Row, chNo, patNo, rowNo int) {
 	for i := 0; i < row.EffectsAmount(); i++ {
 		if fx := row.Effects[i].Type; fx != -1 && !IsEffectValid(fx) {
 			logger.Printf(
-				"warning: inconvertable effect (%02.X) at channel %v, pattern #%X, row #%d; it will be ignored",
+				"warning: inconvertable effect (%02X) at channel %v, pattern #%X, row #%d; it will be ignored",
 				fx,
 				chNames[chNo],
 				patNo,
