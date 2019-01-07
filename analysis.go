@@ -35,9 +35,9 @@ func Analyze(dmf *dmfparse.Song, path string) string {
 // GetSampleData returns JSON-able array of sample mapping objects
 func (dts *ConvDetails) GetSampleData(dmf *dmfparse.Song) {
 	curNote := dmfns.NoteC
-	curBank := 1
+	curBank := 0
 	for i := range dmf.Samples {
-		dts.addDACEntry(curNote, curBank, dmf.Samples[i].Name)
+		dts.AddDACEntry(curNote, curBank, dmf.Samples[i].Name)
 
 		switch curNote {
 		case dmfns.NoteC:
@@ -99,9 +99,12 @@ func Retrieve(jsonReader io.Reader) ConvDetails {
 
 // ParseNumberInMapping parses number in mapping of unspecified JSON type.
 // It can be either string or number or null.
-// String = hexadecimal number
-// Int = just number
-// Null = ignored or decayed
+//
+// String = hexadecimal number;  parsed to int.
+//
+// Number = just number;         converted to int.
+//
+// Null = ignored or decayed;    replaced with -1.
 func ParseNumberInMapping(smth interface{}, pos int, name string, isDAC bool) interface{} {
 	var place, field, object, nullState string
 	if isDAC {
