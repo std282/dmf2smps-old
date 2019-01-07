@@ -15,7 +15,7 @@
 *.txt
 
 # DMF2SMPS configuration
-config.json
+*.json
 
 # DMF modules
 *.dmf
