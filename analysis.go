@@ -10,8 +10,8 @@ import (
 	"github.com/std282/dmf2smps/dmfparse"
 )
 
-// Returns JSON string with analysis results
-func analyze(dmf *dmfparse.Song, path string) string {
+// Analyze returns JSON string with analysis results
+func Analyze(dmf *dmfparse.Song, path string) string {
 	var dts ConvDetails
 	dts.FileName = path
 
@@ -62,7 +62,8 @@ func (dts *ConvDetails) GetInstData(dmf *dmfparse.Song) {
 	}
 }
 
-func retrieve(jsonReader io.Reader) ConvDetails {
+// Retrieve unmarshals JSON conversion structure from reader
+func Retrieve(jsonReader io.Reader) ConvDetails {
 	jsonRaw, err := ioutil.ReadAll(jsonReader)
 	if err != nil {
 		logger.Fatal("error: unable to read configuration file")
