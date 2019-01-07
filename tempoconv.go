@@ -58,7 +58,7 @@ func GetOptimalTempo(fps int) (tempoMod int) {
 
 	if equFPS != 0 {
 		logger.Printf(
-			"warning: unable to find perfect tempo match for FPS = %d; will use tempo 01 %02x, which is equivalent for FPS = %d",
+			"warning: unable to find perfect tempo match for FPS = %d; will use tempo 01 %02X, which is equivalent for FPS = %d",
 			fps,
 			tempoMod,
 			equFPS,
