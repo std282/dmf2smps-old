@@ -1,78 +1,60 @@
 package smpsbuild
 
-import "container/list"
+import (
+	"bytes"
+	"container/list"
+)
 
-// Pattern represents any addressable sequence of SMPS events (like notes,
-// coordination flags...)
+// fromBytes describes anything that could be transformed to bytes
+type fromBytes interface {
+	represent() []byte
+	size() uint
+}
+
+// Pattern represents any sequence of SMPS events.
+// Pattern is SMPS event, too.
 type Pattern struct {
-	events   list.List // chunks, addresses
-	refdFrom list.List // addresses that refer to this pattern
-
-	lastIsBytes bool // true, if last event is chunk of bytes
+	events     *list.List
+	references *list.List
 }
 
-// AddBytes adds raw bytes to pattern
-func (pat *Pattern) AddBytes(b ...byte) {
-	if !pat.lastIsBytes {
-		pat.events.PushBack(&byteChunk{})
-		pat.lastIsBytes = true
-	}
-
-	chunk := pat.events.Back().Value.(*byteChunk)
-	chunk.buf.Write(b)
-}
-
-// AddAddress adds address to pattern
-func (pat *Pattern) AddAddress(addr Address) {
-	pat.events.PushBack(addr)
-	pat.lastIsBytes = false
-}
-
-// CreatePattern creates pattern in the song and returns pointer to it
-func (song *Song) CreatePattern() *Pattern {
-	pat := Pattern{}
-	song.data.PushBack(&pat)
-	return &pat
-}
-
-// RemovePattern removes the pattern from song
-func (song *Song) RemovePattern(pat *Pattern) {
-	toDelete := list.New()
-
-	for node := song.data.Front(); node != nil; node = node.Next() {
-		nodePat := node.Value.(*Pattern)
-		if nodePat == pat {
-			nodePat.unbind()
-			toDelete.PushBack(node)
-		}
-	}
-
-	for node := toDelete.Front(); node != nil; node = node.Next() {
-		del := node.Value.(*list.Element)
-		song.data.Remove(del)
+// NewPattern returns new pattern ready to use
+func NewPattern() *Pattern {
+	return &Pattern{
+		events:     list.New(),
+		references: list.New(),
 	}
 }
 
-// GetAddress returns relative address of the pattern.
-//
-// We do not need absolute addresses. Those are only used in headers, and they're
-// handled separately
-func (pat *Pattern) GetAddress() Address {
-	addr := relAddress{}
-	addr.refer(pat)
-	return &addr
+func (pat *Pattern) foreachEvent(action func(fb fromBytes)) {
+	for node := pat.events.Front(); node != nil; node = node.Next() {
+		fb := node.Value.(fromBytes)
+		action(fb)
+	}
 }
 
-// Resolve every referenced-to address
-func (pat *Pattern) setRelAddrPos(patPos uint) {
-	for el := pat.events.Front(); el != nil; el = el.Next() {
-		switch val := el.Value.(type) {
-		case *byteChunk:
-			patPos += val.sizeOf()
-
-		case *relAddress:
-			val.location = patPos + 1
-			patPos += val.sizeOf()
-		}
+func (pat *Pattern) foreachRef(action func(addr address)) {
+	for node := pat.references.Front(); node != nil; node = node.Next() {
+		addr := node.Value.(address)
+		action(addr)
 	}
+}
+
+func (pat *Pattern) represent() []byte {
+	buf := bytes.NewBuffer(make([]byte, 0, pat.size()))
+
+	pat.foreachEvent(func(fb fromBytes) {
+		buf.Write(fb.represent())
+	})
+
+	return buf.Bytes()
+}
+
+func (pat *Pattern) size() uint {
+	var size uint
+	pat.foreachEvent(func(fb fromBytes) {
+		size += fb.size()
+	})
+
+	return size
 }

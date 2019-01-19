@@ -5,4 +5,4 @@ import (
 	"os"
 )
 
-var logger = log.New(os.Stdout, "smpsbuild: ", 0)
+var logger = log.New(os.Stdout, "smps: ", 0)
