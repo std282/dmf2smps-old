@@ -1,13 +1,13 @@
 package smpsbuild
 
 import (
-	"bytes"
 	"container/list"
+	"io"
 )
 
 // fromBytes describes anything that could be transformed to bytes
 type fromBytes interface {
-	represent() []byte
+	represent(w io.Writer)
 	size() uint
 }
 
@@ -16,14 +16,17 @@ type fromBytes interface {
 type Pattern struct {
 	events     *list.List
 	references *list.List
+
+	lastNote   byte
+	lastLength int8
 }
 
 // NewPattern returns new pattern ready to use
 func NewPattern() *Pattern {
-	return &Pattern{
-		events:     list.New(),
-		references: list.New(),
-	}
+	pat := new(Pattern)
+	pat.events = list.New()
+	pat.references = list.New()
+	return pat
 }
 
 func (pat *Pattern) foreachEvent(action func(fb fromBytes)) {
@@ -40,14 +43,10 @@ func (pat *Pattern) foreachRef(action func(addr address)) {
 	}
 }
 
-func (pat *Pattern) represent() []byte {
-	buf := bytes.NewBuffer(make([]byte, 0, pat.size()))
-
+func (pat *Pattern) represent(w io.Writer) {
 	pat.foreachEvent(func(fb fromBytes) {
-		buf.Write(fb.represent())
+		fb.represent(w)
 	})
-
-	return buf.Bytes()
 }
 
 func (pat *Pattern) size() uint {
