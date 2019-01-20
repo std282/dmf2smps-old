@@ -2,42 +2,51 @@ package smpsbuild
 
 import (
 	"container/list"
+	"io"
 )
 
 // Song represents SMPS song
 type Song struct {
 	voicePtr   *absoluteAddress
+	fmAmount   uint8
+	psgAmount  uint8
 	tempoDiv   uint8
 	tempoMod   uint8
 	dacHeader  dacHeader
 	fmHeaders  [6]fmHeader
 	psgHeaders [3]psgHeader
 
-	voices   *list.List
-	noteData *list.List
+	voices      *list.List
+	noteData    *list.List
+	stopPattern *Pattern
 }
 
 // NewSong returns new SMPS Song ready to use
 func NewSong() *Song {
-	newSongPtr := &Song{
-		voicePtr: newAbsAddr(),
-		tempoDiv: 0,
-		tempoMod: 0,
-		voices:   list.New(),
-		noteData: list.New(),
+	song := new(Song)
+	song.voicePtr = new(absoluteAddress)
+	song.voices = list.New()
+	song.noteData = list.New()
+
+	song.dacHeader.dataPointer = new(absoluteAddress)
+
+	for i := range song.fmHeaders {
+		song.fmHeaders[i].dataPointer = new(absoluteAddress)
 	}
 
-	newSongPtr.dacHeader.dataPointer = newAbsAddr()
-
-	for i := range newSongPtr.fmHeaders {
-		newSongPtr.fmHeaders[i].dataPointer = newAbsAddr()
+	for i := range song.psgHeaders {
+		song.psgHeaders[i].dataPointer = new(absoluteAddress)
 	}
 
-	for i := range newSongPtr.psgHeaders {
-		newSongPtr.psgHeaders[i].dataPointer = newAbsAddr()
+	song.stopPattern = NewPattern()
+	song.stopPattern.PlaceStop()
+
+	// set all patterns to stop
+	for ch := DAC; ch <= PSG3; ch++ {
+		song.SetInitialPattern(song.stopPattern, ch)
 	}
 
-	return newSongPtr
+	return song
 }
 
 // SetTempo sets SMPS song tempo to specified values
@@ -148,4 +157,21 @@ const (
 // AttachPattern attaches single pattern to song
 func (song *Song) AttachPattern(pat *Pattern) {
 	song.noteData.PushBack(pat)
+}
+
+// Export exports SMPS song to writer
+func (song *Song) Export(w io.Writer) (err error) {
+	song.determineChannels()
+	song.removeUnusedPatterns()
+	song.settleReferences()
+
+	pw := newPanicWriter(w)
+	defer func() {
+		if e := recover(); e != nil {
+			err = e.(error)
+		}
+	}()
+
+	song.export(pw)
+	return
 }
