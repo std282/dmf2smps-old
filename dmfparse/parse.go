@@ -7,7 +7,7 @@ import (
 
 // NewSong returns new DMF song
 func NewSong() *Song {
-	return &Song{}
+	return new(Song)
 }
 
 // NewSongParse returns DMF song parsed from r
