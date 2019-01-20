@@ -1,26 +1,19 @@
 package smpsbuild
 
 import (
-	"bytes"
 	"encoding/binary"
+	"io"
 )
 
 type address interface {
-	evaluate(pos uint) // sets position of pointed-to
-	represent() []byte // writes address in SMPS notation
-	isNull() bool      // returns true if address doesn't point at anything
+	evaluate(pos uint)     // sets position of pointed-to
+	represent(w io.Writer) // writes address in SMPS notation
+	isNull() bool          // returns true if address doesn't point at anything
 }
 
 type relativeAddress struct {
 	PointerPosition uint // where is pointer located
 	EntityPosition  uint // where is pointed-to located
-}
-
-func newRelAddr() *relativeAddress {
-	return &relativeAddress{
-		PointerPosition: 0,
-		EntityPosition:  0,
-	}
 }
 
 func (relAddr *relativeAddress) evaluate(pos uint) {
@@ -35,21 +28,18 @@ func (relAddr *relativeAddress) evaluate(pos uint) {
 	relAddr.EntityPosition = pos
 }
 
-func (relAddr *relativeAddress) represent() []byte {
+func (relAddr *relativeAddress) represent(w io.Writer) {
 	if relAddr.isNull() {
 		logger.Fatal(
 			"error: attempted to represent null relative pointer",
 		)
 	}
 
-	buf := bytes.NewBuffer(make([]byte, 0, 2))
 	binary.Write(
-		buf,
+		w,
 		binary.BigEndian,
 		int16(relAddr.EntityPosition)-int16(relAddr.PointerPosition+1),
 	)
-
-	return buf.Bytes()
 }
 
 func (relAddr *relativeAddress) isNull() bool {
@@ -58,12 +48,6 @@ func (relAddr *relativeAddress) isNull() bool {
 
 type absoluteAddress struct {
 	EntityPosition uint // where is pointed-to located
-}
-
-func newAbsAddr() *absoluteAddress {
-	return &absoluteAddress{
-		EntityPosition: 0,
-	}
 }
 
 func (absAddr *absoluteAddress) evaluate(pos uint) {
@@ -78,17 +62,14 @@ func (absAddr *absoluteAddress) evaluate(pos uint) {
 	absAddr.EntityPosition = pos
 }
 
-func (absAddr *absoluteAddress) represent() []byte {
+func (absAddr *absoluteAddress) represent(w io.Writer) {
 	// null absolute pointer is OK, so no checking here
 
-	buf := bytes.NewBuffer(make([]byte, 0, 2))
 	binary.Write(
-		buf,
+		w,
 		binary.BigEndian,
 		int16(absAddr.EntityPosition),
 	)
-
-	return buf.Bytes()
 }
 
 func (absAddr *absoluteAddress) isNull() bool {

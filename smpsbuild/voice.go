@@ -1,5 +1,7 @@
 package smpsbuild
 
+import "io"
+
 // Voice represents one SMPS voice
 type Voice struct {
 	FB, ALG int
@@ -7,7 +9,7 @@ type Voice struct {
 	MULT, DT, RS, AR, DR, SR, SL, RR, TL [4]int
 }
 
-func (voice *Voice) export() []byte {
+func (voice *Voice) export(w io.Writer) {
 	var voiceArr [25]byte
 
 	voice.ALG &= 7 // 3 bits
@@ -33,5 +35,5 @@ func (voice *Voice) export() []byte {
 		voiceArr[21+j] = byte(voice.TL[i])
 	}
 
-	return voiceArr[:]
+	w.Write(voiceArr[:])
 }

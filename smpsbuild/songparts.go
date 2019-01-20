@@ -1,6 +1,8 @@
 package smpsbuild
 
-import "bytes"
+import (
+	"io"
+)
 
 type fmHeader struct {
 	dataPointer  *absoluteAddress
@@ -9,16 +11,12 @@ type fmHeader struct {
 	pitch        int8
 }
 
-func (fm *fmHeader) represent() []byte {
-	buf := bytes.NewBuffer(make([]byte, 0, 4))
-
-	buf.Write(fm.dataPointer.represent())
-	buf.Write([]byte{
+func (fm *fmHeader) represent(w io.Writer) {
+	fm.dataPointer.represent(w)
+	w.Write([]byte{
 		byte(fm.pitch),
 		byte(fm.volume),
 	})
-
-	return buf.Bytes()
 }
 
 func (fm *fmHeader) size() uint {
@@ -33,16 +31,13 @@ type psgHeader struct {
 	initialVoice byte
 }
 
-func (psg *psgHeader) represent() []byte {
-	buf := bytes.NewBuffer(make([]byte, 0, 5))
-	buf.Write(psg.dataPointer.represent())
-	buf.Write([]byte{
+func (psg *psgHeader) represent(w io.Writer) {
+	psg.dataPointer.represent(w)
+	w.Write([]byte{
 		byte(psg.pitch),
 		byte(psg.volume),
 		byte(psg.initialVoice),
 	})
-
-	return buf.Bytes()
 }
 
 func (psg *psgHeader) size() uint {
