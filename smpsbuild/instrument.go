@@ -44,7 +44,7 @@ func (*eventSetVoiceFM) size() uint {
 func (pat *Pattern) SetPSGVoice(voiceNum int) {
 	if voiceNum < 0 || voiceNum > 255 {
 		logError.Fatalf(
-			"error: invalid PSG voice number (%d)",
+			"invalid PSG voice number (%d)",
 			voiceNum,
 		)
 	}
