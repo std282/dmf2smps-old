@@ -1,30 +1,41 @@
 package smpsbuild
 
+/*
+	This file contains function for adding other SMPS coordination flags to
+	pattern:
+
+	$E6 - alter volume (FM)
+	$EC - alter volume (PSG)
+	$E9 - alter pitch
+	$E1 - fine-tune
+	$E0 - panning
+*/
+
 import "io"
 
 // AlterVolumeFM adds $E6 (alter volume for FM) coordination flag.
 func (pat *Pattern) AlterVolumeFM(alteration int) {
 	if alteration < -127 || alteration > 127 {
-		logger.Fatalf(
-			"error: invalid FM volume alteration (%d)",
+		logError.Fatalf(
+			"invalid FM volume alteration (%d)",
 			alteration,
 		)
 	}
 
 	fmVol := new(eventAlterVolFM)
-	fmVol.Amount = int8(alteration)
+	fmVol.amount = int8(alteration)
 
-	pat.events.PushBack(fmVol)
+	pat.addEvent(fmVol)
 }
 
 type eventAlterVolFM struct {
-	Amount int8
+	amount int8
 }
 
 func (volFm *eventAlterVolFM) represent(w io.Writer) {
 	w.Write([]byte{
 		0xE6,
-		byte(volFm.Amount),
+		byte(volFm.amount),
 	})
 }
 
@@ -35,26 +46,26 @@ func (*eventAlterVolFM) size() uint {
 // AlterVolumePSG adds $EC (alter volume for PSG) coordination flag.
 func (pat *Pattern) AlterVolumePSG(alteration int) {
 	if alteration < -127 || alteration > 127 {
-		logger.Fatalf(
-			"error: invalid PSG volume alteration (%d)",
+		logError.Fatalf(
+			"invalid PSG volume alteration (%d)",
 			alteration,
 		)
 	}
 
 	psgVol := new(eventAlterVolPSG)
-	psgVol.Amount = int8(alteration)
+	psgVol.amount = int8(alteration)
 
-	pat.events.PushBack(psgVol)
+	pat.addEvent(psgVol)
 }
 
 type eventAlterVolPSG struct {
-	Amount int8
+	amount int8
 }
 
 func (volFm *eventAlterVolPSG) represent(w io.Writer) {
 	w.Write([]byte{
 		0xEC,
-		byte(volFm.Amount),
+		byte(volFm.amount),
 	})
 }
 
@@ -65,26 +76,26 @@ func (*eventAlterVolPSG) size() uint {
 // AlterPitch adds $E9 (alter pitch) coordination flag.
 func (pat *Pattern) AlterPitch(alteration int) {
 	if alteration < -127 || alteration > 127 {
-		logger.Fatalf(
-			"error: invalid pitch alteration (%d)",
+		logError.Fatalf(
+			"invalid pitch alteration (%d)",
 			alteration,
 		)
 	}
 
 	pitch := new(eventAlterPitch)
-	pitch.Amount = int8(alteration)
+	pitch.amount = int8(alteration)
 
-	pat.events.PushBack(pitch)
+	pat.addEvent(pitch)
 }
 
 type eventAlterPitch struct {
-	Amount int8
+	amount int8
 }
 
 func (pitch *eventAlterPitch) represent(w io.Writer) {
 	w.Write([]byte{
 		0xE9,
-		byte(pitch.Amount),
+		byte(pitch.amount),
 	})
 }
 
@@ -95,26 +106,26 @@ func (*eventAlterPitch) size() uint {
 // SetFineTune adds $E1 (fine-tune channel) coordination flag.
 func (pat *Pattern) SetFineTune(displacement int) {
 	if displacement < -127 || displacement > 127 {
-		logger.Fatalf(
-			"error: invalid fine-tune value (%d)",
+		logError.Fatalf(
+			"invalid fine-tune value (%d)",
 			displacement,
 		)
 	}
 
 	tune := new(eventFineTune)
-	tune.Value = int8(displacement)
+	tune.value = int8(displacement)
 
-	pat.events.PushBack(tune)
+	pat.addEvent(tune)
 }
 
 type eventFineTune struct {
-	Value int8
+	value int8
 }
 
 func (tune *eventFineTune) represent(w io.Writer) {
 	w.Write([]byte{
 		0xE1,
-		byte(tune.Value),
+		byte(tune.value),
 	})
 }
 
@@ -128,13 +139,13 @@ func (*eventFineTune) size() uint {
 // or smpsbuild.PanCenter.
 func (pat *Pattern) SetPan(side panSide) {
 	pan := new(eventPan)
-	pan.Side = side
+	pan.side = side
 
-	pat.events.PushBack(pan)
+	pat.addEvent(pan)
 }
 
 type eventPan struct {
-	Side panSide
+	side panSide
 }
 
 type panSide byte
@@ -151,7 +162,7 @@ const (
 func (pan *eventPan) represent(w io.Writer) {
 	w.Write([]byte{
 		0xE0,
-		byte(pan.Side),
+		byte(pan.side),
 	})
 }
 

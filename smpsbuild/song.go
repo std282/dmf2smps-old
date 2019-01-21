@@ -1,5 +1,9 @@
 package smpsbuild
 
+/*
+	This file describes SMPS song structure and its interface.
+*/
+
 import (
 	"container/list"
 	"io"
@@ -21,12 +25,15 @@ type Song struct {
 	stopPattern *Pattern
 }
 
-// NewSong returns new SMPS Song ready to use
+// NewSong returns new SMPS song ready to use
 func NewSong() *Song {
-	song := new(Song)
-	song.voicePtr = new(absoluteAddress)
-	song.voices = list.New()
-	song.noteData = list.New()
+	song := &Song{
+		voicePtr: new(absoluteAddress),
+		voices:   list.New(),
+		noteData: list.New(),
+	}
+
+	// Following instructions initialize absolute addresses for SMPS headers.
 
 	song.dacHeader.dataPointer = new(absoluteAddress)
 
@@ -38,12 +45,20 @@ func NewSong() *Song {
 		song.psgHeaders[i].dataPointer = new(absoluteAddress)
 	}
 
+	// Each song has stop pattern. It is used for disabling channels if there
+	// are channels that do not have any data to play, but there are channels
+	// with data after them.
+	//
+	// For example, PSG3 noise channel must play, even if there are no notes for
+	// PSG1 and PSG2.
+
 	song.stopPattern = NewPattern()
 	song.stopPattern.PlaceStop()
 
 	// set all patterns to stop
 	for ch := DAC; ch <= PSG3; ch++ {
-		song.SetInitialPattern(song.stopPattern, ch)
+		_, addr := song.setInitGetAddr(ch, song.stopPattern)
+		song.stopPattern.addRef(addr)
 	}
 
 	return song
@@ -55,77 +70,48 @@ func (song *Song) SetTempo(div, mod int) {
 	song.tempoMod = uint8(mod)
 }
 
-// SetInitialPattern sets initial pattern for channel and adds it to data list
+// SetInitialPattern sets initial pattern for channel and attaches it to pattern
+// list.
 func (song *Song) SetInitialPattern(pat *Pattern, ch channelID) {
-	setRef := func(workPat *Pattern, addr *absoluteAddress) {
-		if workPat != nil {
-			workPat.removeRef(addr)
-		}
-		workPat = pat
-		song.noteData.PushBack(pat)
-		pat.addRef(addr)
-	}
+	oldPat, addr := song.setInitGetAddr(ch, pat)
+	oldPat.removeRef(addr)
+	pat.addRef(addr)
+	song.noteData.PushBack(pat)
+}
 
+// setInitGetAddr sets boundPattern value of specified channel to specified
+// pattern. It returns pointer to old pattern that was bound to channel.
+//
+// Please note: this function does NOT add new pattern to list. It is designed
+// to work with patterns that are already in the list.
+func (song *Song) setInitGetAddr(ch channelID, pat *Pattern) (*Pattern, *absoluteAddress) {
 	switch ch {
 	case DAC:
-		setRef(
-			song.dacHeader.boundPattern,
-			song.dacHeader.dataPointer,
-		)
+		initPattern := song.dacHeader.boundPattern
+		initAddress := song.dacHeader.dataPointer
 
-	case FM1:
-		setRef(
-			song.fmHeaders[0].boundPattern,
-			song.fmHeaders[0].dataPointer,
-		)
+		song.dacHeader.boundPattern = pat
+		return initPattern, initAddress
 
-	case FM2:
-		setRef(
-			song.fmHeaders[1].boundPattern,
-			song.fmHeaders[1].dataPointer,
-		)
+	case FM1, FM2, FM3, FM4, FM5, FM6:
+		index := int(ch - FM1)
+		initPattern := song.fmHeaders[index].boundPattern
+		initAddress := song.fmHeaders[index].dataPointer
 
-	case FM3:
-		setRef(
-			song.fmHeaders[2].boundPattern,
-			song.fmHeaders[2].dataPointer,
-		)
+		song.fmHeaders[index].boundPattern = pat
+		return initPattern, initAddress
 
-	case FM4:
-		setRef(
-			song.fmHeaders[3].boundPattern,
-			song.fmHeaders[3].dataPointer,
-		)
+	case PSG1, PSG2, PSG3:
+		index := int(ch - PSG1)
+		initPattern := song.psgHeaders[index].boundPattern
+		initAddress := song.psgHeaders[index].dataPointer
 
-	case FM5:
-		setRef(
-			song.fmHeaders[4].boundPattern,
-			song.fmHeaders[4].dataPointer,
-		)
+		song.psgHeaders[index].boundPattern = pat
+		return initPattern, initAddress
 
-	case FM6:
-		setRef(
-			song.fmHeaders[5].boundPattern,
-			song.fmHeaders[5].dataPointer,
-		)
-
-	case PSG1:
-		setRef(
-			song.psgHeaders[0].boundPattern,
-			song.psgHeaders[0].dataPointer,
-		)
-
-	case PSG2:
-		setRef(
-			song.psgHeaders[1].boundPattern,
-			song.psgHeaders[1].dataPointer,
-		)
-
-	case PSG3:
-		setRef(
-			song.psgHeaders[2].boundPattern,
-			song.psgHeaders[2].dataPointer,
-		)
+	// this should never happen
+	default:
+		return nil, nil
 	}
 }
 
@@ -154,9 +140,17 @@ const (
 	PSG3
 )
 
-// AttachPattern attaches single pattern to song
+// AttachPattern attaches single pattern to song.
+//
+// Don't attach same pattern twice. If you do, you'll likely get warnings about
+// pointer reevaluation.
 func (song *Song) AttachPattern(pat *Pattern) {
 	song.noteData.PushBack(pat)
+}
+
+// AttachVoice attaches single FM voice to song.
+func (song *Song) AttachVoice(voice *Voice) {
+	song.voices.PushBack(voice)
 }
 
 // Export exports SMPS song to writer

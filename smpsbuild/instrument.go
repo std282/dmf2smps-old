@@ -1,30 +1,38 @@
 package smpsbuild
 
+/*
+	This file contains functions for adding coordination flags for voice setting:
+
+	$EF - set FM voice
+	$F5 - set PSG voice (volume envelope)
+	$F3 - set PSG3 noise mode
+*/
+
 import "io"
 
 // SetFMVoice adds $EF (set FM voice) coordination flag.
 func (pat *Pattern) SetFMVoice(voiceNum int) {
 	if voiceNum < 0 || voiceNum > 255 {
-		logger.Printf(
-			"error: invalid FM voice number (%d)",
+		logError.Fatalf(
+			"invalid FM voice number (%d);",
 			voiceNum,
 		)
 	}
 
 	fmVoice := new(eventSetVoiceFM)
-	fmVoice.VoicePos = uint8(voiceNum)
+	fmVoice.voicePos = uint8(voiceNum)
 
-	pat.events.PushBack(fmVoice)
+	pat.addEvent(fmVoice)
 }
 
 type eventSetVoiceFM struct {
-	VoicePos uint8
+	voicePos uint8
 }
 
 func (fmVoice *eventSetVoiceFM) represent(w io.Writer) {
 	w.Write([]byte{
 		0xEF,
-		byte(fmVoice.VoicePos),
+		byte(fmVoice.voicePos),
 	})
 }
 
@@ -35,26 +43,26 @@ func (*eventSetVoiceFM) size() uint {
 // SetPSGVoice adds $F5 (set PSG voice) coordination flag.
 func (pat *Pattern) SetPSGVoice(voiceNum int) {
 	if voiceNum < 0 || voiceNum > 255 {
-		logger.Printf(
+		logError.Fatalf(
 			"error: invalid PSG voice number (%d)",
 			voiceNum,
 		)
 	}
 
 	psgVoice := new(eventSetVoicePSG)
-	psgVoice.VoicePos = uint8(voiceNum)
+	psgVoice.voicePos = uint8(voiceNum)
 
-	pat.events.PushBack(psgVoice)
+	pat.addEvent(psgVoice)
 }
 
 type eventSetVoicePSG struct {
-	VoicePos uint8
+	voicePos uint8
 }
 
 func (psgVoice *eventSetVoicePSG) represent(w io.Writer) {
 	w.Write([]byte{
 		0xF5,
-		byte(psgVoice.VoicePos),
+		byte(psgVoice.voicePos),
 	})
 }
 
@@ -69,15 +77,15 @@ func (*eventSetVoicePSG) size() uint {
 // Use values RangeLowOnly, RangeMidOnly, RangeHighOnly or RangeFull for rng.
 func (pat *Pattern) SetNoiseMode(wave noiseWave, rng noiseRange) {
 	noise := new(eventPsgNoise)
-	noise.Range = rng
-	noise.Wave = wave
+	noise.nRange = rng
+	noise.wave = wave
 
-	pat.events.PushBack(noise)
+	pat.addEvent(noise)
 }
 
 type eventPsgNoise struct {
-	Wave  noiseWave
-	Range noiseRange
+	wave   noiseWave
+	nRange noiseRange
 }
 
 type noiseWave byte
@@ -102,6 +110,10 @@ const (
 func (noise *eventPsgNoise) represent(w io.Writer) {
 	w.Write([]byte{
 		0xF3,
-		byte(noise.Wave) | byte(noise.Range),
+		byte(noise.wave) | byte(noise.nRange),
 	})
+}
+
+func (*eventPsgNoise) size() uint {
+	return 2
 }

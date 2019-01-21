@@ -1,77 +1,89 @@
 package smpsbuild
 
+/*
+	This file describes address interface and structures.
+
+	Addresses are used for implementing pointers in SMPS, and they are lazily
+	evaluated, since there is virtually no way to tell position of pointer and
+	entity it points at until song structure is known.
+*/
+
 import (
 	"encoding/binary"
 	"io"
 )
 
+// address describes interface of address
 type address interface {
 	evaluate(pos uint)     // sets position of pointed-to
 	represent(w io.Writer) // writes address in SMPS notation
-	isNull() bool          // returns true if address doesn't point at anything
 }
 
+// relativeAddress desribes address used in coordination flags. It points to
+// some entity relatively to its own position.
 type relativeAddress struct {
-	PointerPosition uint // where is pointer located
-	EntityPosition  uint // where is pointed-to located
+	pointerPosition uint // where is pointer located
+	entityPosition  uint // where is pointed-to located
+	active          bool // is pointer active
 }
 
 func (relAddr *relativeAddress) evaluate(pos uint) {
-	if relAddr.EntityPosition != 0 {
-		logger.Printf(
-			"warning: relative pointer reevaluation (%d -> %d)",
-			relAddr.EntityPosition,
+	if relAddr.active {
+		logWarn.Printf(
+			"relative pointer reevaluation (%d -> %d)",
+			relAddr.entityPosition,
 			pos,
 		)
 	}
 
-	relAddr.EntityPosition = pos
+	relAddr.entityPosition = pos
+	relAddr.active = true
 }
 
 func (relAddr *relativeAddress) represent(w io.Writer) {
-	if relAddr.isNull() {
-		logger.Fatal(
-			"error: attempted to represent null relative pointer",
+	if !relAddr.active {
+		logError.Fatal(
+			"attempted to represent inactive relative pointer",
 		)
 	}
 
 	binary.Write(
 		w,
 		binary.BigEndian,
-		int16(relAddr.EntityPosition)-int16(relAddr.PointerPosition+1),
+		int16(relAddr.entityPosition)-int16(relAddr.pointerPosition+1),
 	)
 }
 
-func (relAddr *relativeAddress) isNull() bool {
-	return relAddr.PointerPosition == 0 || relAddr.EntityPosition == 0
-}
-
+// relativeAddress desribes address used in coordination flags. It points to
+// some entity relatively to song start.
 type absoluteAddress struct {
-	EntityPosition uint // where is pointed-to located
+	entityPosition uint // where is pointed-to located
+	active         bool
 }
 
 func (absAddr *absoluteAddress) evaluate(pos uint) {
-	if absAddr.EntityPosition != 0 {
-		logger.Printf(
-			"warning: absolute pointer reevaluation (%d -> %d)",
-			absAddr.EntityPosition,
+	if absAddr.active {
+		logWarn.Printf(
+			"absolute pointer reevaluation (%d -> %d)",
+			absAddr.entityPosition,
 			pos,
 		)
 	}
 
-	absAddr.EntityPosition = pos
+	absAddr.entityPosition = pos
+	absAddr.active = true
 }
 
 func (absAddr *absoluteAddress) represent(w io.Writer) {
-	// null absolute pointer is OK, so no checking here
+	if !absAddr.active {
+		logError.Fatal(
+			"attempted to represent inactive absolute pointer",
+		)
+	}
 
 	binary.Write(
 		w,
 		binary.BigEndian,
-		int16(absAddr.EntityPosition),
+		int16(absAddr.entityPosition),
 	)
-}
-
-func (absAddr *absoluteAddress) isNull() bool {
-	return absAddr.EntityPosition == 0
 }

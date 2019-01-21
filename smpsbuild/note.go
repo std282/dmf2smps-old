@@ -1,5 +1,9 @@
 package smpsbuild
 
+/*
+	This file contains function for adding notes to pattern.
+*/
+
 import "io"
 
 // PlaceNote places SMPS note of specified length to pattern.
@@ -10,38 +14,38 @@ import "io"
 // length.
 func (pat *Pattern) PlaceNote(note byte, length int) {
 	if (note < 0x80 || note > 0xDF) && note != SameNote {
-		logger.Fatalf(
-			"error: invalid SMPS note value (%d)",
+		logError.Fatalf(
+			"invalid SMPS note value (%d)",
 			note,
 		)
 	}
 
 	if (length <= 0 && length != SameLength) || length > 127 {
-		logger.Fatalf(
-			"error: invalid SMPS note length (%d)",
+		logError.Fatalf(
+			"invalid SMPS note length (%d)",
 			length,
 		)
 	}
 
 	noteEv := new(eventNote)
-	noteEv.Note = note
-	noteEv.Length = int8(length)
+	noteEv.note = note
+	noteEv.length = int8(length)
 
 	if note != SameNote {
-		pat.lastNote = noteEv.Note
+		pat.lastNote = noteEv.note
 	}
 
 	if length != SameLength {
-		pat.lastLength = noteEv.Length
+		pat.lastLength = noteEv.length
 	}
 
-	pat.events.PushBack(noteEv)
+	pat.addEvent(noteEv)
 }
 
 // Note event
 type eventNote struct {
-	Note   byte
-	Length int8
+	note   byte
+	length int8
 }
 
 // SameNote indicates that note to be played is the same as previous
@@ -54,27 +58,27 @@ const sameLengthInternal int8 = -1
 // Returns byte representation of note
 func (note *eventNote) represent(w io.Writer) {
 	switch {
-	case note.Note == SameNote:
+	case note.note == SameNote:
 		w.Write([]byte{
-			byte(note.Length),
+			byte(note.length),
 		})
 
-	case note.Length == sameLengthInternal:
+	case note.length == sameLengthInternal:
 		w.Write([]byte{
-			note.Note,
+			note.note,
 		})
 
 	default:
 		w.Write([]byte{
-			note.Note,
-			byte(note.Length),
+			note.note,
+			byte(note.length),
 		})
 	}
 }
 
 // Returns size of note
 func (note *eventNote) size() uint {
-	if note.Note == SameNote || note.Length == sameLengthInternal {
+	if note.note == SameNote || note.length == sameLengthInternal {
 		return 1
 	}
 
@@ -101,7 +105,7 @@ func (pat *Pattern) PlaceNoteClever(note byte, length int) {
 func (pat *Pattern) PreventAttack() {
 	noAtk := new(eventNoAttack)
 
-	pat.events.PushBack(noAtk)
+	pat.addEvent(noAtk)
 }
 
 type eventNoAttack struct{}
