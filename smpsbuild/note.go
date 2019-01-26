@@ -31,14 +31,6 @@ func (pat *Pattern) PlaceNote(note byte, length int) {
 	noteEv.note = note
 	noteEv.length = int8(length)
 
-	if note != SameNote {
-		pat.lastNote = noteEv.note
-	}
-
-	if length != SameLength {
-		pat.lastLength = noteEv.length
-	}
-
 	pat.addEvent(noteEv)
 }
 
@@ -83,22 +75,6 @@ func (note *eventNote) size() uint {
 	}
 
 	return 2
-}
-
-// PlaceNoteClever places note with awareness of last note and last length.
-// If note is the same as last, places only length.
-// If length is the same as last, places only note.
-func (pat *Pattern) PlaceNoteClever(note byte, length int) {
-	switch {
-	case note == pat.lastNote:
-		pat.PlaceNote(SameNote, length)
-
-	case length == int(pat.lastLength):
-		pat.PlaceNote(note, SameLength)
-
-	default:
-		pat.PlaceNote(note, length)
-	}
 }
 
 // PreventAttack adds $E7 (prevent next note from attacking) coordination flag.

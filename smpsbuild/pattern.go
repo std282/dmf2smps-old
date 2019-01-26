@@ -22,9 +22,6 @@ type Pattern struct {
 	events     *list.List
 	references *list.List
 
-	lastNote   byte
-	lastLength int8
-
 	eventsSize uint
 }
 
