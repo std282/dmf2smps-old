@@ -18,7 +18,7 @@ func (pr *panicReader) handleError(err error) {
 	case io.EOF:
 		pr.eof = true
 	default:
-		logger.Fatal("error: reading error: ", err.Error())
+		logErr.Fatal("reading error: ", err.Error())
 	}
 }
 
