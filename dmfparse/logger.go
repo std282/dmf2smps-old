@@ -5,4 +5,5 @@ import (
 	"os"
 )
 
-var logger = log.New(os.Stdout, "dmfparse: ", 0)
+var logWarn = log.New(os.Stderr, "dmfparse: warning: ", 0)
+var logErr = log.New(os.Stderr, "dmfparse: error: ", 0)

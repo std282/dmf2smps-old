@@ -1,6 +1,7 @@
 package dmfparse
 
 import (
+	"fmt"
 	"io"
 	"strconv"
 )
@@ -23,18 +24,19 @@ func (song *Song) Parse(r io.Reader) {
 
 	// Parsing preamble and version. We quit if preamble fails
 	if preamble := pr.ReadString(16); preamble != ".DelekDefleMask." {
-		logger.Fatal("error: file is not a DefleMask module")
+		logErr.Fatal("file is not a DefleMask module")
 	}
 	if version := pr.Read8(); version != 24 {
-		logger.Printf("error: unsupported version (%v), must be 24", version)
-		logger.Fatal(
+		hint := fmt.Sprint(
 			"hint: try to open this module in the latest version of ",
 			"DefleMask and resave it",
 		)
+
+		logErr.Printf("unsupported version (%v), must be 24\n%s", version, hint)
 	}
 	if system := pr.Read8(); system != 2 {
-		logger.Fatalf(
-			"error: specified system (%v) is not supported, use SEGA Genesis",
+		logErr.Fatalf(
+			"specified system (%v) is not supported, use SEGA Genesis",
 			systemName[system],
 		)
 	}
@@ -64,7 +66,7 @@ func (song *Song) Parse(r io.Reader) {
 			song.Instruments = append(song.Instruments, &inst)
 
 		default:
-			logger.Fatalf("error: instrument #%v has invalid type", i)
+			logErr.Fatalf("instrument #%v has invalid type", i)
 		}
 	}
 
@@ -105,7 +107,7 @@ func (song *Song) parse(pr panicReader) {
 		var err error
 		song.FramesPerSecond, err = strconv.Atoi(custom)
 		if err != nil {
-			logger.Fatal("error: cannot parse custom FPS")
+			logErr.Fatal("cannot parse custom FPS")
 		}
 	}
 
