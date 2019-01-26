@@ -15,4 +15,8 @@ Converter from DefleMask Format to Simple Music Playback System (Sonic 1)
 
 ## Current state
 
+<<<<<<< HEAD
 I am ready to implement conversion. _Again._ -\_-
+=======
+I am ready to start implement conversion. _Again._ -\_-
+>>>>>>> 41133c9e4eafcd0aad2c9379ca8ed9659920c8aa
