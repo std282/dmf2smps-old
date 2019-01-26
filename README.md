@@ -3,10 +3,11 @@
 Converter from DefleMask Format to Simple Music Playback System (Sonic 1)
 
 ## TODO
-- [x] implement DMF parsing (package *dmfparse*)
+- [x] implement DMF parsing (packages *dmfparse*, *dmfns*)
 - [x] test DMF parsing
 - [x] implement SMPS assembling (package *smpsbuild*)
-- [ ] test SMPS assembling
+- [x] test SMPS assembling
+- [x] add managed patterns for easier patterns creation (package *mngpat*)
 - [ ] implement configuration file creation and analysis
 - [ ] implement conversion algorithm
 - [ ] implement shell commands analyzer
@@ -14,5 +15,4 @@ Converter from DefleMask Format to Simple Music Playback System (Sonic 1)
 
 ## Current state
 
-I tried to work at several things at once. Such inconsistency have led to a lot
-of code I couldn't manage. I deleted it and I lost progress.
+I am ready to start implement conversion. _Again._ -\_-
