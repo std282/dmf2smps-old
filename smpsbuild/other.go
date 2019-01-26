@@ -137,7 +137,7 @@ func (*eventFineTune) size() uint {
 //
 // side argument can be one of the following: smpsbuild.PanLeft, smpsbuild.PanRight
 // or smpsbuild.PanCenter.
-func (pat *Pattern) SetPan(side panSide) {
+func (pat *Pattern) SetPan(side byte) {
 	pan := new(eventPan)
 	pan.side = side
 
@@ -145,24 +145,22 @@ func (pat *Pattern) SetPan(side panSide) {
 }
 
 type eventPan struct {
-	side panSide
+	side byte
 }
-
-type panSide byte
 
 const (
 	// PanLeft = set panning to left
-	PanLeft panSide = 0x40
+	PanLeft byte = 0x40
 	// PanRight = set panning to right
-	PanRight panSide = 0x80
+	PanRight byte = 0x80
 	// PanCenter = set panning to center
-	PanCenter panSide = 0xC0
+	PanCenter byte = 0xC0
 )
 
 func (pan *eventPan) represent(w io.Writer) {
 	w.Write([]byte{
 		0xE0,
-		byte(pan.side),
+		pan.side,
 	})
 }
 
