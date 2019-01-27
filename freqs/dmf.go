@@ -46,9 +46,19 @@ func DMF2SMPSNoteDispPSG(dmfNote, dmfOctave int16) (note byte, disp int8) {
 		}
 	}
 
-	pos := (dmfNote % 12) + (dmfOctave % 12)
-	freq := getFreq(int(pos))
+	pos := int((dmfNote % 12) + (dmfOctave * 12))
+	freq := 0
+	switch pos {
+	case 95: // B-7
+		freq = getFreq(95-12) / 2
+
+	case 96: // C-8
+		freq = 0
+
+	default:
+		freq = getFreq(pos)
+	}
+
 	note, disp = approxPeriodPSG(freq)
 	return
-
 }
