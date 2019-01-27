@@ -29,6 +29,16 @@ func DMF2SMPSNoteFM(dmfNote, dmfOctave int16) byte {
 
 // DMF2SMPSNoteDispPSG returns SMPS equivalent of DMF note for PSG.
 func DMF2SMPSNoteDispPSG(dmfNote, dmfOctave int16) (note byte, disp int8) {
+	switch dmfNote {
+	case -1:
+		logError.Fatal(
+			"empty notes are not supported for conversion",
+		)
+
+	case 100:
+		return 0x80, 0
+	}
+
 	// Separately declare and initialize to allow recursion
 	var getFreq func(int) int
 	getFreq = func(n int) int {
@@ -46,9 +56,19 @@ func DMF2SMPSNoteDispPSG(dmfNote, dmfOctave int16) (note byte, disp int8) {
 		}
 	}
 
-	pos := (dmfNote % 12) + (dmfOctave % 12)
-	freq := getFreq(int(pos))
+	pos := int((dmfNote % 12) + (dmfOctave * 12))
+	freq := 0
+	switch pos {
+	case 95: // B-7
+		freq = getFreq(95-12) / 2
+
+	case 96: // C-8
+		freq = 0
+
+	default:
+		freq = getFreq(pos)
+	}
+
 	note, disp = approxPeriodPSG(freq)
 	return
-
 }
