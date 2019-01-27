@@ -13,6 +13,12 @@ import "io"
 // Use smpsbuild.SameLength (or -1) as length argument to play note with last
 // length.
 func (pat *Pattern) PlaceNote(note byte, length int) {
+	if note == SameNote && length == SameLength {
+		logError.Fatal(
+			"invalid SMPS note: (SameNote, SameLength)",
+		)
+	}
+
 	if (note < 0x80 || note > 0xDF) && note != SameNote {
 		logError.Fatalf(
 			"invalid SMPS note value (%d)",
